@@ -38,7 +38,7 @@ class Document(Base):
     size_bytes = Column(Integer, nullable=False)
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     processed = Column(Boolean, default=False, nullable=False)
-    metadata = Column(JSON, nullable=True)
+    doc_metadata = Column(JSON, nullable=True)
 
 
 class Analysis(Base):

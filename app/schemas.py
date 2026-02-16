@@ -60,10 +60,11 @@ class DocumentResponse(BaseModel):
 
 
 class DocumentDetail(DocumentResponse):
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = Field(None, alias="doc_metadata")
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 class DocumentListResponse(BaseModel):

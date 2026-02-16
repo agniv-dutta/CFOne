@@ -218,7 +218,7 @@ async def get_document(
         size_bytes=document.size_bytes,
         uploaded_at=document.uploaded_at,
         processed=document.processed,
-        metadata=document.metadata,
+        metadata=document.doc_metadata,
     )
 
 

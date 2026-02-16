@@ -37,7 +37,29 @@ const Register = () => {
 
       navigate('/login', { state: { message: 'Registration successful! Please login.' } });
     } catch (err) {
-      setError(err.response?.data?.error?.message || 'Registration failed');
+      console.error('Registration error:', err.response?.data);
+      
+      // Handle different error formats
+      let errorMessage = 'Registration failed';
+      
+      if (err.response?.data?.detail) {
+        // FastAPI error format
+        if (Array.isArray(err.response.data.detail)) {
+          // Validation errors
+          errorMessage = err.response.data.detail
+            .map(e => `${e.loc.join('.')}: ${e.msg}`)
+            .join(', ');
+        } else if (typeof err.response.data.detail === 'string') {
+          // Simple error message
+          errorMessage = err.response.data.detail;
+        }
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -83,6 +105,9 @@ const Register = () => {
               className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-primary"
               required
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Must be at least 8 characters with uppercase, lowercase, and number
+            </p>
           </div>
 
           <div>

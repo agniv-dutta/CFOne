@@ -84,7 +84,7 @@ def process_analysis(analysis_id: str, document_ids: List[str], db_path: str):
                         continue
 
                     all_text.append(parsed_data.get("text", ""))
-                    doc.metadata = {"page_count": parsed_data.get("page_count"), "tables": len(parsed_data.get("tables", []))}
+                    doc.doc_metadata = {"page_count": parsed_data.get("page_count"), "tables": len(parsed_data.get("tables", []))}
 
                 elif doc.filename.endswith((".xlsx", ".xls")):
                     parsed_data = extract_data_from_excel(doc.file_path)
@@ -96,7 +96,7 @@ def process_analysis(analysis_id: str, document_ids: List[str], db_path: str):
                     # Convert Excel data to text
                     excel_text = json.dumps(parsed_data.get("sheets", []), indent=2)
                     all_text.append(excel_text)
-                    doc.metadata = parsed_data.get("metadata", {})
+                    doc.doc_metadata = parsed_data.get("metadata", {})
 
                 doc_types.append(doc.document_type or "financial_document")
                 doc.processed = True

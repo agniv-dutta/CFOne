@@ -6,6 +6,15 @@ __pycache__/
 # C extensions
 *.so
 
+# Node.js / Frontend
+node_modules/
+frontend/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+frontend/dist/
+frontend/.vite/
+
 # Distribution / packaging
 .Python
 build/
