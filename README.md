@@ -1,6 +1,6 @@
-# AstraCFO - AI Chief Financial Officer
+# CFOne - AI Chief Financial Officer
 
-AstraCFO is an autonomous AI Chief Financial Officer system designed for small and medium enterprises. It analyzes financial documents (bank statements, GST reports, Excel sheets) to provide financial health summaries, cash flow forecasts, risk detection, compliance reminders, loan approval insights, and actionable recommendations.
+CFOne is an autonomous AI Chief Financial Officer system designed for small and medium enterprises. It analyzes financial documents (bank statements, GST reports, Excel sheets) to provide financial health summaries, cash flow forecasts, risk detection, compliance reminders, loan approval insights, and actionable recommendations.
 
 ## Features
 
