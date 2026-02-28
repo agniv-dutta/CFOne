@@ -61,7 +61,7 @@ Output format must be valid JSON matching this structure:
             context=context,
             system_prompt=self.SYSTEM_PROMPT,
             temperature=0.4,
-            max_tokens=2000,
+            max_tokens=800,
             reasoning_effort="low",
         )
 

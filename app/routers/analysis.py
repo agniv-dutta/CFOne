@@ -1,6 +1,6 @@
 """Analysis API endpoints"""
 
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models, schemas
@@ -14,7 +14,6 @@ from app.agents.automation_agent import AutomationAgent
 from app.agents.explainability_agent import ExplainabilityAgent
 from app.utils.pdf_parser import extract_text_from_pdf
 from app.utils.excel_parser import extract_data_from_excel
-from app.middleware.security import limiter
 from datetime import datetime, timedelta
 from typing import List, Optional
 import logging
@@ -227,9 +226,7 @@ def process_analysis(analysis_id: str, document_ids: List[str], db_path: str):
 
 
 @router.post("/run", response_model=schemas.AnalysisResponse, status_code=status.HTTP_202_ACCEPTED)
-@limiter.limit("20/minute")
 async def run_analysis(
-    request: Request,
     data: schemas.AnalysisRequest,
     background_tasks: BackgroundTasks,
     current_user: models.User = Depends(get_current_user),

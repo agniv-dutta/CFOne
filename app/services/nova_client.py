@@ -28,8 +28,7 @@ class NovaClient:
             self.embedding_model_id = settings.titan_embedding_model_id
             logger.info("AWS Bedrock client initialized successfully")
         except Exception as e:
-            # Never log credentials – only log the error type
-            logger.error(f"Failed to initialize AWS Bedrock client: {type(e).__name__}")
+            logger.error(f"Failed to initialize AWS Bedrock client: {str(e)}")
             raise
 
     def invoke_agent(
