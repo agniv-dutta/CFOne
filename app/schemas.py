@@ -9,9 +9,18 @@ import re
 # Authentication Schemas
 class UserRegister(BaseModel):
     email: EmailStr
-    password: str = Field(..., min_length=8)
-    company_name: str = Field(..., min_length=2, max_length=100)
-    business_type: Optional[str] = None
+    password: str = Field(..., min_length=8, max_length=128)
+    company_name: str = Field(
+        ...,
+        min_length=2,
+        max_length=100,
+        pattern=r"^[\w\s\-\.&,()]+$",
+    )
+    business_type: Optional[str] = Field(
+        None,
+        max_length=50,
+        pattern=r"^[\w\s\-]+$",
+    )
 
     @validator("password")
     def password_strength(cls, v):
@@ -21,12 +30,14 @@ class UserRegister(BaseModel):
             raise ValueError("Password must contain at least one lowercase letter")
         if not re.search(r"[0-9]", v):
             raise ValueError("Password must contain at least one number")
+        if re.search(r"[<>\"'`;\\]", v):
+            raise ValueError("Password contains invalid characters")
         return v
 
 
 class UserLogin(BaseModel):
     email: EmailStr
-    password: str
+    password: str = Field(..., min_length=1, max_length=128)
 
 
 class UserResponse(BaseModel):
@@ -82,8 +93,11 @@ class DocumentUploadResponse(BaseModel):
 
 # Analysis Schemas
 class AnalysisRequest(BaseModel):
-    document_ids: Optional[List[str]] = None
-    analysis_type: Optional[str] = "full"  # "full" or "quick"
+    document_ids: Optional[List[str]] = Field(None, max_length=10)
+    analysis_type: Optional[str] = Field(
+        "full",
+        pattern=r"^(full|quick)$",
+    )
 
 
 class AnalysisResponse(BaseModel):

@@ -28,7 +28,8 @@ class NovaClient:
             self.embedding_model_id = settings.titan_embedding_model_id
             logger.info("AWS Bedrock client initialized successfully")
         except Exception as e:
-            logger.error(f"Failed to initialize AWS Bedrock client: {str(e)}")
+            # Never log credentials – only log the error type
+            logger.error(f"Failed to initialize AWS Bedrock client: {type(e).__name__}")
             raise
 
     def invoke_agent(
@@ -54,32 +55,24 @@ class NovaClient:
         """
         for attempt in range(settings.max_retries):
             try:
-                # Construct request body for Nova 2 Lite
-                request_body = {
-                    "messages": [{"role": "user", "content": prompt}],
-                    "system": [{"text": system_prompt}],
-                    "inferenceConfig": {
+                logger.info(f"Invoking Nova model (attempt {attempt + 1}/{settings.max_retries})")
+
+                # Invoke model via converse API
+                response = self.client.converse(
+                    modelId=self.model_id,
+                    messages=[{"role": "user", "content": [{"text": prompt}]}],
+                    system=[{"text": system_prompt}],
+                    inferenceConfig={
                         "temperature": temperature,
                         "maxTokens": max_tokens,
                     },
-                }
-
-                # Add reasoning config based on effort level
-                if reasoning_effort in ["low", "medium", "high"]:
-                    request_body["thinkingConfig"] = {"effort": reasoning_effort}
-
-                logger.info(f"Invoking Nova model (attempt {attempt + 1}/{settings.max_retries})")
-
-                # Invoke model
-                response = self.client.converse(
-                    modelId=self.model_id,
-                    messages=request_body["messages"],
-                    system=request_body["system"],
-                    inferenceConfig=request_body["inferenceConfig"],
                 )
 
-                # Extract response text
-                response_text = response["output"]["message"]["content"][0]["text"]
+                # Extract response text from converse API response
+                content_blocks = response["output"]["message"]["content"]
+                response_text = "".join(
+                    block["text"] for block in content_blocks if "text" in block
+                )
 
                 logger.info(f"Nova model invoked successfully")
 

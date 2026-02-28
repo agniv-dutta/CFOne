@@ -6,6 +6,12 @@ from app.config import get_settings
 from app.database import init_db
 from app.middleware.cors import setup_cors
 from app.middleware.error_handler import http_exception_handler, general_exception_handler
+from app.middleware.security import (
+    SecurityHeadersMiddleware,
+    limiter,
+    rate_limit_exceeded_handler,
+)
+from slowapi.errors import RateLimitExceeded
 from app.routers import auth, documents, analysis
 from app.services.nova_client import NovaClient
 from app.services.embeddings import VectorStore
@@ -21,19 +27,29 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 settings = get_settings()
 
-# Create FastAPI app
+# Create FastAPI app – hide interactive docs outside development
+_docs_url = "/docs" if settings.app_env == "development" else None
+_redoc_url = "/redoc" if settings.app_env == "development" else None
+
 app = FastAPI(
     title="AstraCFO API",
     description="AI Chief Financial Officer for small and medium enterprises",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=_docs_url,
+    redoc_url=_redoc_url,
 )
+
+# Attach limiter state so slowapi decorators work
+app.state.limiter = limiter
+
+# Security headers on every response
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Setup CORS
 setup_cors(app)
 
 # Add exception handlers
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 

@@ -6,6 +6,11 @@ __pycache__/
 # C extensions
 *.so
 
+# Runtime data – never commit user uploads or local DB
+uploads/
+data/
+logs/
+
 # Node.js / Frontend
 node_modules/
 frontend/node_modules/

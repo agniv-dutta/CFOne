@@ -1,6 +1,6 @@
 """Document management API endpoints"""
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models, schemas
@@ -8,6 +8,7 @@ from app.dependencies import get_current_user
 from app.config import get_settings
 from app.utils.pdf_parser import extract_text_from_pdf
 from app.utils.excel_parser import extract_data_from_excel
+from app.middleware.security import limiter, sanitize_filename, sanitize_string
 from typing import List, Optional
 import os
 import shutil
@@ -41,7 +42,9 @@ def validate_file(file: UploadFile) -> tuple[bool, Optional[str]]:
 
 
 @router.post("/upload", response_model=schemas.DocumentUploadResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 async def upload_documents(
+    request: Request,
     files: List[UploadFile] = File(...),
     document_type: Optional[str] = Form(None),
     current_user: models.User = Depends(get_current_user),
@@ -76,15 +79,31 @@ async def upload_documents(
         if not is_valid:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-        # Generate document ID
-        doc = models.Document(user_id=current_user.user_id, filename=file.filename, document_type=document_type)
+        # Sanitize filename – reject path traversal / dangerous chars
+        try:
+            safe_filename = sanitize_filename(file.filename or "upload")
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+        # Sanitize optional document_type field
+        safe_doc_type = None
+        if document_type:
+            try:
+                safe_doc_type = sanitize_string(document_type, max_length=50)
+            except ValueError as e:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+        # Generate document ID explicitly so it's available before DB insert
+        import uuid
+        doc_id = str(uuid.uuid4())
+        doc = models.Document(document_id=doc_id, user_id=current_user.user_id, filename=safe_filename, document_type=safe_doc_type)
 
         # Create directory for user and document
-        doc_dir = os.path.join(settings.upload_dir, current_user.user_id, doc.document_id)
+        doc_dir = os.path.join(settings.upload_dir, current_user.user_id, doc_id)
         os.makedirs(doc_dir, exist_ok=True)
 
         # Save file
-        file_path = os.path.join(doc_dir, file.filename)
+        file_path = os.path.join(doc_dir, safe_filename)
 
         try:
             with open(file_path, "wb") as buffer:

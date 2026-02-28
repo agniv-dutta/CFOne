@@ -79,6 +79,24 @@ const Report = () => {
 
         {reportData && (
           <div className="space-y-6">
+            {/* Show agent errors if any section failed */}
+            {(reportData.section_1_financial_health?.error ||
+              reportData.section_2_cash_flow_forecast?.error ||
+              reportData.section_3_risk_alerts?.error) && (
+              <div className="bg-yellow-50 border border-yellow-400 text-yellow-800 p-4 rounded">
+                <p className="font-semibold">⚠️ Some sections could not be analyzed:</p>
+                {reportData.section_1_financial_health?.error && (
+                  <p className="text-sm mt-1">Financial Health: {reportData.section_1_financial_health.error}</p>
+                )}
+                {reportData.section_2_cash_flow_forecast?.error && (
+                  <p className="text-sm mt-1">Cash Flow: {reportData.section_2_cash_flow_forecast.error}</p>
+                )}
+                {reportData.section_3_risk_alerts?.error && (
+                  <p className="text-sm mt-1">Risk: {reportData.section_3_risk_alerts.error}</p>
+                )}
+              </div>
+            )}
+
             {/* Section 1: Financial Health */}
             <div className="bg-white p-6 rounded-lg shadow">
               <h2 className="text-2xl font-bold mb-4">1. Financial Health Overview</h2>

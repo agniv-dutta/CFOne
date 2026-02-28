@@ -37,8 +37,10 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
 
     # AWS Bedrock Models
-    nova_model_id: str = "global.amazon.nova-2-lite-v1:0"
-    titan_embedding_model_id: str = "amazon.titan-embed-text-v1"
+    nova_lite_model_id: str = "amazon.nova-lite-v1:0"
+    nova_pro_model_id: str = "amazon.nova-pro-v1:0"
+    nova_model_id: str = "amazon.nova-lite-v1:0"
+    titan_embedding_model_id: str = "amazon.titan-embed-text-v2:0"
 
     # Processing Settings
     chunk_size_words: int = 500
@@ -53,5 +55,19 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
-    """Get cached settings instance"""
-    return Settings()
+    """Get cached settings instance with security pre-checks."""
+    import logging as _logging
+    _log = _logging.getLogger(__name__)
+    s = Settings()
+
+    if s.secret_key in ("CHANGE_ME_IN_PRODUCTION", "", "changeme"):
+        _log.warning(
+            "SECURITY WARNING: SECRET_KEY is using the default insecure value. "
+            "Set a strong SECRET_KEY in your .env file before deploying."
+        )
+    if not s.aws_access_key_id or not s.aws_secret_access_key:
+        _log.warning(
+            "SECURITY WARNING: AWS credentials are not set. "
+            "AWS Bedrock features will not work."
+        )
+    return s
