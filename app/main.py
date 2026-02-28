@@ -1,4 +1,4 @@
-"""FastAPI main application for AstraCFO"""
+"""FastAPI main application for CFOne"""
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
@@ -23,7 +23,7 @@ settings = get_settings()
 
 # Create FastAPI app
 app = FastAPI(
-    title="AstraCFO API",
+    title="CFOne API",
     description="AI Chief Financial Officer for small and medium enterprises",
     version="1.0.0",
     docs_url="/docs",
@@ -46,7 +46,7 @@ app.include_router(analysis.router)
 @app.on_event("startup")
 async def startup_event():
     """Initialize application on startup"""
-    logger.info("Starting AstraCFO application...")
+    logger.info("Starting CFOne application...")
 
     # Create required directories
     os.makedirs("data", exist_ok=True)
@@ -58,13 +58,13 @@ async def startup_event():
     logger.info("Initializing database...")
     init_db()
 
-    logger.info("AstraCFO application started successfully")
+    logger.info("CFOne application started successfully")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
-    logger.info("Shutting down AstraCFO application...")
+    logger.info("Shutting down CFOne application...")
 
 
 @app.get("/api/health")
@@ -126,7 +126,7 @@ async def health_check():
 async def root():
     """Root endpoint"""
     return {
-        "message": "AstraCFO API",
+        "message": "CFOne API",
         "version": "1.0.0",
         "docs": "/docs",
         "health": "/api/health",

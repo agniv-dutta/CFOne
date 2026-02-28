@@ -1,1 +1,1 @@
-"""AI agent modules for AstraCFO"""
+"""AI agent modules for CFOne"""
