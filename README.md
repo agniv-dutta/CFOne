@@ -243,7 +243,7 @@ AWS_ACCESS_KEY_ID=your_access_key
 AWS_SECRET_ACCESS_KEY=your_secret_key
 AWS_REGION=us-east-1
 SECRET_KEY=your_jwt_secret
-DATABASE_URL=sqlite:///./data/astracfo.db
+DATABASE_URL=sqlite:///./data/cfone.db
 UPLOAD_DIR=./uploads
 VECTOR_STORE_PATH=./data/vector_store
 API_HOST=0.0.0.0
@@ -264,7 +264,7 @@ VITE_API_BASE_URL=http://localhost:8000
 - Ensure IAM permissions are granted for Bedrock access
 
 ### Database Issues
-- Delete `data/astracfo.db` and restart to reset database
+- Delete `data/cfone.db` and restart to reset database
 - Check file permissions on data directory
 
 ### Upload Issues
@@ -287,7 +287,7 @@ VITE_API_BASE_URL=http://localhost:8000
 
 ## License
 
-Copyright © 2025 AstraCFO. All rights reserved.
+Copyright © 2025 CFOne. All rights reserved.
 
 ## Support
 
