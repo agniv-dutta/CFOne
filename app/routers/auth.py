@@ -1,11 +1,10 @@
 """Authentication API endpoints"""
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app import models, schemas
 from app.utils.auth import hash_password, verify_password, create_access_token, get_token_expiration_seconds
-from app.middleware.security import limiter
 from datetime import datetime
 import logging
 
@@ -14,13 +13,11 @@ router = APIRouter(prefix="/api/auth", tags=["authentication"])
 
 
 @router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/minute")
-async def register_user(request: Request, user_data: schemas.UserRegister, db: Session = Depends(get_db)):
+async def register_user(user_data: schemas.UserRegister, db: Session = Depends(get_db)):
     """
     Register a new user account
 
     Args:
-        request: FastAPI request (required by slowapi)
         user_data: User registration data
         db: Database session
 
@@ -30,7 +27,7 @@ async def register_user(request: Request, user_data: schemas.UserRegister, db: S
     Raises:
         HTTPException: If email already exists or validation fails
     """
-    logger.info("Registration attempt received")
+    logger.info(f"Registration attempt for email: {user_data.email}")
 
     # Check if email already exists
     existing_user = db.query(models.User).filter(models.User.email == user_data.email).first()
@@ -61,13 +58,11 @@ async def register_user(request: Request, user_data: schemas.UserRegister, db: S
 
 
 @router.post("/login", response_model=schemas.TokenResponse)
-@limiter.limit("10/minute")
-async def login_user(request: Request, login_data: schemas.UserLogin, db: Session = Depends(get_db)):
+async def login_user(login_data: schemas.UserLogin, db: Session = Depends(get_db)):
     """
     Authenticate user and receive JWT token
 
     Args:
-        request: FastAPI request (required by slowapi)
         login_data: Login credentials
         db: Database session
 
@@ -77,7 +72,7 @@ async def login_user(request: Request, login_data: schemas.UserLogin, db: Sessio
     Raises:
         HTTPException: If credentials are invalid
     """
-    logger.info("Login attempt received")
+    logger.info(f"Login attempt for email: {login_data.email}")
 
     # Get user by email
     user = db.query(models.User).filter(models.User.email == login_data.email).first()
