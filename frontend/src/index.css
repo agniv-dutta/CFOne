@@ -1,17 +1,326 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  html {
+    /* Default is dark */
+    --bg-color: #0F0D0B;
+    --surface-card: #1C1917;
+    --border-color: rgba(205, 127, 50, 0.12);
+    /* bronze tinted */
+    --primary-accent: #CD7F32;
+    --secondary-accent: #AAFF00;
+    --positive-color: #00E676;
+    --negative-color: #FF3B3B;
+    --text-primary: #F0EBE3;
+    --text-secondary: #A89880;
+    --text-muted: #5C4F3D;
+
+    /* Specific components */
+    --ticker-bg: #1C1917;
+    --ticker-text-color: #ffffff;
+    --ticker-up: #AAFF00;
+    --ticker-down: #FF3B3B;
+    --nav-bg: transparent;
+    --nav-border: transparent;
+    --btn-select-border: #AAFF00;
+    --btn-select-text: #AAFF00;
+    --btn-select-fill: transparent;
+    --btn-select-hover-bg: rgba(170, 255, 0, 0.06);
+    --btn-generate-border: #CD7F32;
+    --btn-generate-text: #CD7F32;
+    --btn-generate-fill: transparent;
+    --btn-generate-hover-shadow: 0 0 10px rgba(205, 127, 50, 0.3);
+    --btn-generate-hover-bg: transparent;
+    --scanline-display: block;
+    --accuracy-bar-fill: var(--primary-accent);
+    --analysis-bar-fill-1: #AAFF00;
+    --analysis-bar-fill-2: #CCFF66;
+    /* Lime/red as mentioned, wait, prompt says "lime/red", we'll just use lime for up */
+    --cmd-line-color: var(--text-muted);
+
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  html.light {
+    --bg-color: #FDF5F0;
+    --surface-card: #FFFFFF;
+    --border-color: #EDE0D8;
+    --primary-accent: #C41E3A;
+    --secondary-accent: #E8520A;
+    --positive-color: #E8520A;
+    --negative-color: #C41E3A;
+    --text-primary: #1A1410;
+    --text-secondary: #6B5B4E;
+    --text-muted: #A89880;
+
+    /* Specific components */
+    --ticker-bg: #C41E3A;
+    --ticker-text-color: #ffffff;
+    --ticker-up: #ffffff;
+    --ticker-down: rgba(255, 255, 255, 0.7);
+    --nav-bg: #ffffff;
+    --nav-border: #F0E8E0;
+    --btn-select-border: #C41E3A;
+    --btn-select-text: #FFFFFF;
+    --btn-select-fill: #C41E3A;
+    --btn-select-hover-bg: #b31631;
+    /* hover color */
+    --btn-generate-border: #E8520A;
+    --btn-generate-text: #FFFFFF;
+    --btn-generate-fill: #E8520A;
+    --btn-generate-hover-shadow: none;
+    --btn-generate-hover-bg: #cf4909;
+    /* hover color */
+    --scanline-display: none;
+    --accuracy-bar-fill: var(--primary-accent);
+    /* pink-to-crimson progression handled dynamically or using opacity */
+    --cmd-line-color: var(--primary-accent);
+  }
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@layer utilities {
+  .surface-card {
+    background-color: var(--surface-card);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    /* Slight rounding might look better, assuming standard */
+    transition: all 0.3s ease;
+  }
+
+  .surface-card:hover {
+    filter: brightness(1.05);
+    /* "hover on all cards: subtle background lightening" */
+  }
+
+  html.light .surface-card:hover {
+    filter: brightness(0.97);
+  }
+
+  /* Text Colors */
+  .text-primary {
+    color: var(--text-primary) !important;
+  }
+
+  .text-secondary {
+    color: var(--text-secondary) !important;
+  }
+
+  .text-muted {
+    color: var(--text-muted) !important;
+  }
+
+  .text-accent-primary {
+    color: var(--primary-accent) !important;
+  }
+
+  .text-accent-secondary {
+    color: var(--secondary-accent) !important;
+  }
+
+  .text-positive {
+    color: var(--positive-color) !important;
+  }
+
+  .text-negative {
+    color: var(--negative-color) !important;
+  }
+
+  /* Fonts */
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-mono {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .font-body {
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+
+  /* Buttons */
+  .btn-select {
+    border: 1px solid var(--btn-select-border);
+    color: var(--btn-select-text) !important;
+    background-color: var(--btn-select-fill);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-select:hover {
+    transform: translateY(-1px);
+    background-color: var(--btn-select-hover-bg);
+  }
+
+  .btn-generate {
+    border: 1px solid var(--btn-generate-border);
+    color: var(--btn-generate-text) !important;
+    background-color: var(--btn-generate-fill);
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .btn-generate:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--btn-generate-hover-shadow);
+    background-color: var(--btn-generate-hover-bg);
+  }
+}
+
+/* Ticker Animation */
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticker {
+  animation: ticker 30s linear infinite;
+  display: flex;
+  white-space: nowrap;
+}
+
+/* Blinking cursor */
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.animate-blink {
+  animation: blink 1.1s steps(1) infinite;
+}
+
+/* Fade up animation */
+@keyframes fadeUp {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.fade-delay-1 {
+  animation-delay: 0.1s;
+}
+
+.fade-delay-2 {
+  animation-delay: 0.2s;
+}
+
+.fade-delay-3 {
+  animation-delay: 0.3s;
+}
+
+.fade-delay-4 {
+  animation-delay: 0.4s;
+}
+
+.fade-delay-5 {
+  animation-delay: 0.5s;
+}
+
+.fade-delay-6 {
+  animation-delay: 0.6s;
+}
+
+/* Theming transition */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+/* Scanlines and Vignette for Dark Mode */
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999;
+  background: repeating-linear-gradient(rgba(205, 127, 50, 0.03),
+      rgba(205, 127, 50, 0.03) 1px,
+      transparent 1px,
+      transparent 3px);
+  display: var(--scanline-display);
+  animation: scanlineFlicker 8s infinite;
+}
+
+.vignette {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 998;
+  background: radial-gradient(circle, transparent 50%, rgba(15, 13, 11, 0.8) 150%);
+  display: var(--scanline-display);
+}
+
+@keyframes scanlineFlicker {
+  0% {
+    opacity: 0.9;
+  }
+
+  5% {
+    opacity: 0.8;
+  }
+
+  10% {
+    opacity: 0.9;
+  }
+
+  90% {
+    opacity: 0.9;
+  }
+
+  95% {
+    opacity: 0.6;
+  }
+
+  100% {
+    opacity: 0.9;
+  }
 }

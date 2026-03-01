@@ -1,4 +1,4 @@
-"""Configuration management for AstraCFO application"""
+"""Configuration management for CFOne application"""
 
 from pydantic_settings import BaseSettings
 from functools import lru_cache
@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
 
     # Database
-    database_url: str = "sqlite:///./data/astracfo.db"
+    database_url: str = "sqlite:///./data/cfone.db"
 
     # File Storage
     upload_dir: str = "./uploads"

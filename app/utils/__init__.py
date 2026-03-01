@@ -1,1 +1,1 @@
-"""Utility modules for AstraCFO"""
+"""Utility modules for CFOne"""
