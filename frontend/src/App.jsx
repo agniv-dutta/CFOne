@@ -34,7 +34,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/analysis" element={<Analysis />} />
-            <Route path="/report/:id" element={<Report />} />
+            <Route path="/report/:analysisId" element={<Report />} />
             <Route path="/reports" element={<ReportsPlaceholder />} />
           </Route>
 

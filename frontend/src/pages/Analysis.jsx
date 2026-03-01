@@ -111,6 +111,16 @@ const Analysis = () => {
                 </div>
               </div>
 
+              {selectedDocs.length === 0 && (
+                <p className="font-mono text-[10px] text-[var(--text-muted)] tracking-widest mb-2 text-center uppercase">
+                  ☑ Select at least one document above
+                </p>
+              )}
+              {selectedDocs.length > 0 && (
+                <p className="font-mono text-[10px] text-[var(--positive-color)] tracking-widest mb-2 text-center uppercase">
+                  ✓ {selectedDocs.length} document{selectedDocs.length > 1 ? 's' : ''} selected
+                </p>
+              )}
               <button
                 onClick={handleRunAnalysis}
                 disabled={running || selectedDocs.length === 0}
