@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from '../components/Layout/Navbar';
 import { getDocuments, uploadDocuments, deleteDocument } from '../services/api';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 
@@ -68,93 +67,87 @@ const Documents = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <LoadingSpinner size="large" />
-        </div>
+      <div className="flex justify-center items-center py-20">
+        <LoadingSpinner size="large" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <div className="flex flex-col space-y-6 animate-fade-up">
+      <h1 className="font-display text-4xl mb-4 text-[var(--text-primary)] tracking-wide">Documents</h1>
 
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Documents</h1>
+      <div className="surface-card p-8">
+        <h2 className="font-display text-2xl font-semibold mb-6 text-[var(--text-primary)]">Upload Documents</h2>
+        <form onSubmit={handleUpload} className="space-y-6">
+          <div>
+            <input
+              type="file"
+              onChange={handleFileChange}
+              multiple
+              accept=".pdf,.xlsx,.xls"
+              className="block w-full text-sm text-[var(--text-muted)]
+                file:mr-4 file:py-2.5 file:px-6
+                file:rounded-sm file:border file:border-[var(--primary-accent)]
+                file:text-xs file:font-mono file:tracking-wider
+                file:bg-transparent file:text-[var(--primary-accent)]
+                hover:file:bg-[var(--primary-accent)] hover:file:text-[var(--bg-color)] file:transition-colors file:cursor-pointer custom-file-input"
+            />
+            <p className="text-xs font-mono text-[var(--text-muted)] mt-4 tracking-wide">
+              ACCEPTED FORMATS: PDF, EXCEL (.XLSX, .XLS). MAX 10MB PER FILE.
+            </p>
+          </div>
 
-        <div className="bg-white p-6 rounded-lg shadow mb-8">
-          <h2 className="text-xl font-bold mb-4">Upload Documents</h2>
-          <form onSubmit={handleUpload} className="space-y-4">
-            <div>
-              <input
-                type="file"
-                onChange={handleFileChange}
-                multiple
-                accept=".pdf,.xlsx,.xls"
-                className="block w-full text-sm text-gray-500
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-primary file:text-white
-                  hover:file:bg-blue-700"
-              />
-              <p className="text-sm text-gray-500 mt-2">
-                Accepted formats: PDF, Excel (.xlsx, .xls). Max 10MB per file.
-              </p>
-            </div>
+          <button
+            type="submit"
+            disabled={uploading}
+            className="btn-select py-3 px-8 font-mono text-[11px] tracking-wider uppercase font-bold"
+          >
+            {uploading ? 'UPLOADING...' : 'UPLOAD FILES'}
+          </button>
+        </form>
+      </div>
 
-            <button
-              type="submit"
-              disabled={uploading}
-              className="bg-primary text-white px-6 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
-            >
-              {uploading ? 'Uploading...' : 'Upload'}
-            </button>
-          </form>
-        </div>
+      <div className="surface-card p-8">
+        <h2 className="font-display text-2xl font-semibold mb-6 text-[var(--text-primary)]">Your Documents</h2>
 
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-bold mb-4">Your Documents</h2>
-
-          {documents.length === 0 ? (
-            <p className="text-gray-500">No documents uploaded yet.</p>
-          ) : (
-            <div className="space-y-4">
-              {documents.map((doc) => (
-                <div
-                  key={doc.document_id}
-                  className="border rounded p-4 flex justify-between items-center"
-                >
-                  <div>
-                    <h3 className="font-semibold">{doc.filename}</h3>
-                    <p className="text-sm text-gray-500">
+        {documents.length === 0 ? (
+          <p className="text-[var(--text-secondary)] font-mono text-sm">No documents uploaded yet.</p>
+        ) : (
+          <div className="space-y-4">
+            {documents.map((doc) => (
+              <div
+                key={doc.document_id}
+                className="border border-[var(--border-color)] rounded-sm p-5 flex flex-col md:flex-row md:justify-between md:items-center bg-[var(--surface-card)] hover:brightness-110 transition-all"
+              >
+                <div className="mb-4 md:mb-0">
+                  <h3 className="font-mono text-sm font-semibold text-[var(--text-primary)] opacity-90">{doc.filename}</h3>
+                  <div className="flex items-center space-x-4 mt-2">
+                    <p className="font-mono text-[10px] text-[var(--text-muted)] tracking-wider">
                       {new Date(doc.uploaded_at).toLocaleDateString()} •{' '}
                       {(doc.size_bytes / 1024).toFixed(2)} KB
                     </p>
                     <span
-                      className={`inline-block px-2 py-1 text-xs rounded mt-1 ${
-                        doc.processed
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
+                      className={`inline-block px-2.5 py-1 text-[9px] font-mono tracking-widest uppercase rounded-sm border ${doc.processed
+                          ? 'border-[var(--positive-color)] text-[var(--positive-color)]'
+                          : 'border-[var(--primary-accent)] text-[var(--primary-accent)]'
+                        }`}
                     >
                       {doc.processed ? 'Processed' : 'Processing'}
                     </span>
                   </div>
-
-                  <button
-                    onClick={() => handleDelete(doc.document_id)}
-                    className="text-red-600 hover:text-red-800 px-4 py-2"
-                  >
-                    Delete
-                  </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+
+                <button
+                  onClick={() => handleDelete(doc.document_id)}
+                  className="font-mono text-[10px] tracking-wider uppercase text-[var(--negative-color)] hover:text-red-400 px-4 py-2 border border-transparent hover:border-[var(--negative-color)] transition-colors rounded-sm"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

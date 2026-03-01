@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Layout/Navbar';
 import { getDocuments, getAnalyses, runAnalysis } from '../services/api';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
 
@@ -65,108 +64,110 @@ const Analysis = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="container mx-auto px-4 py-8">
-          <LoadingSpinner size="large" />
-        </div>
+      <div className="flex justify-center items-center py-20">
+        <LoadingSpinner size="large" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <div className="flex flex-col space-y-6 animate-fade-up">
+      <h1 className="font-display text-4xl mb-6 text-[var(--text-primary)] tracking-wide">Analysis Control</h1>
 
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Analysis</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="surface-card p-8 flex flex-col h-full">
+          <h2 className="font-display text-2xl font-semibold mb-6 text-[var(--text-primary)]">Run New Analysis</h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-4">Run New Analysis</h2>
+          {documents.length === 0 ? (
+            <p className="text-[var(--text-secondary)] font-mono text-sm">
+              No documents available. Please upload documents first.
+            </p>
+          ) : (
+            <>
+              <div className="mb-6 flex-1">
+                <p className="font-mono text-[9px] tracking-widest text-[var(--text-muted)] mt-2 mb-4 uppercase">
+                  Select documents to analyze
+                </p>
 
-            {documents.length === 0 ? (
-              <p className="text-gray-500">
-                No documents available. Please upload documents first.
-              </p>
-            ) : (
-              <>
-                <div className="space-y-2 mb-4">
-                  <p className="text-sm text-gray-600 mb-2">
-                    Select documents to analyze:
-                  </p>
-
+                <div className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                   {documents.map((doc) => (
-                    <label key={doc.document_id} className="flex items-center space-x-2">
+                    <label
+                      key={doc.document_id}
+                      className={`flex items-center space-x-3 p-3 border rounded-sm cursor-pointer transition-colors
+                        ${selectedDocs.includes(doc.document_id)
+                          ? 'border-[var(--primary-accent)] bg-[rgba(205,127,50,0.05)]'
+                          : 'border-[var(--border-color)] hover:border-[var(--text-muted)]'
+                        }`}
+                    >
                       <input
                         type="checkbox"
                         checked={selectedDocs.includes(doc.document_id)}
                         onChange={() => toggleDocument(doc.document_id)}
-                        className="rounded"
+                        className="rounded-sm border-[var(--primary-accent)] text-[var(--primary-accent)] focus:ring-[var(--primary-accent)] bg-transparent"
                       />
-                      <span className="text-sm">{doc.filename}</span>
+                      <span className="text-sm font-mono tracking-wide text-[var(--text-primary)] truncate">{doc.filename}</span>
                     </label>
                   ))}
                 </div>
+              </div>
 
-                <button
-                  onClick={handleRunAnalysis}
-                  disabled={running || selectedDocs.length === 0}
-                  className="w-full bg-primary text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+              <button
+                onClick={handleRunAnalysis}
+                disabled={running || selectedDocs.length === 0}
+                className="btn-generate w-full py-3 px-6 mt-auto font-mono text-xs tracking-wider uppercase font-bold text-center"
+              >
+                {running ? 'INITIALIZING AGENTS...' : 'START ANALYSIS →'}
+              </button>
+            </>
+          )}
+        </div>
+
+        <div className="surface-card p-8 flex flex-col h-full">
+          <h2 className="font-display text-2xl font-semibold mb-6 text-[var(--text-primary)]">Analysis History</h2>
+
+          {analyses.length === 0 ? (
+            <p className="text-[var(--text-secondary)] font-mono text-sm">No analyses run yet.</p>
+          ) : (
+            <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
+              {analyses.map((analysis) => (
+                <div
+                  key={analysis.analysis_id}
+                  className="border border-[var(--border-color)] rounded-sm p-5 cursor-pointer hover:border-[var(--secondary-accent)] transition-colors group"
+                  onClick={() => navigate(`/report/${analysis.analysis_id}`)}
                 >
-                  {running ? 'Starting Analysis...' : 'Start Analysis'}
-                </button>
-              </>
-            )}
-          </div>
-
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-bold mb-4">Analysis History</h2>
-
-            {analyses.length === 0 ? (
-              <p className="text-gray-500">No analyses run yet.</p>
-            ) : (
-              <div className="space-y-4">
-                {analyses.map((analysis) => (
-                  <div
-                    key={analysis.analysis_id}
-                    className="border rounded p-4"
-                    onClick={() => navigate(`/report/${analysis.analysis_id}`)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-sm text-gray-500">
-                          {new Date(analysis.created_at).toLocaleString()}
-                        </p>
-                        <p className="text-sm mt-1">
-                          {analysis.document_count} document(s)
-                        </p>
-                      </div>
-
-                      <span
-                        className={`px-2 py-1 text-xs rounded ${
-                          analysis.status === 'completed'
-                            ? 'bg-green-100 text-green-800'
-                            : analysis.status === 'processing'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}
-                      >
-                        {analysis.status}
-                      </span>
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-mono text-xs text-[var(--text-muted)] tracking-wider mb-1">
+                        {new Date(analysis.created_at).toLocaleString()}
+                      </p>
+                      <p className="font-mono text-sm font-semibold text-[var(--text-primary)]">
+                        {analysis.document_count} document(s)
+                      </p>
                     </div>
 
-                    {analysis.status === 'completed' && (
-                      <button className="mt-2 text-primary text-sm hover:underline">
-                        View Report →
-                      </button>
-                    )}
+                    <span
+                      className={`px-2 py-1 text-[9px] uppercase font-mono tracking-widest rounded-sm border ${analysis.status === 'completed'
+                          ? 'border-[var(--positive-color)] text-[var(--positive-color)]'
+                          : analysis.status === 'processing'
+                            ? 'border-[var(--primary-accent)] text-[var(--primary-accent)]'
+                            : 'border-[var(--negative-color)] text-[var(--negative-color)]'
+                        }`}
+                    >
+                      {analysis.status}
+                    </span>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
+
+                  {analysis.status === 'completed' && (
+                    <div className="mt-4 flex justify-end">
+                      <span className="font-mono text-[10px] tracking-wider text-[var(--secondary-accent)] uppercase group-hover:underline">
+                        View Report →
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
