@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import ThemeLayout from './components/Layout/ThemeLayout';
@@ -29,42 +29,19 @@ export default function App() {
           <Route path="/register" element={<Register />} />
 
           <Route
-            path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <ThemeLayout />
               </ProtectedRoute>
             }
-          />
-
-          <Route
-            path="/documents"
-            element={
-              <ProtectedRoute>
-                <Documents />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/analysis"
-            element={
-              <ProtectedRoute>
-                <Analysis />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/report/:analysisId"
-            element={
-              <ProtectedRoute>
-                <Report />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          >
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/documents" element={<Documents />} />
+            <Route path="/analysis" element={<Analysis />} />
+            <Route path="/reports" element={<ReportsPlaceholder />} />
+            <Route path="/report/:analysisId" element={<Report />} />
+          </Route>
         </Routes>
       </BrowserRouter>
     </AuthProvider>

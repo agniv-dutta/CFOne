@@ -67,7 +67,7 @@ const Dashboard = () => {
           </div>
           <div className="px-8 flex flex-col">
             <span className="font-mono text-[9px] tracking-widest text-[var(--text-muted)] mb-5 uppercase">· TOTAL ANALYSES</span>
-            <span className="font-mono text-5xl font-bold text-[var(--secondary-accent)] mb-3">{stats.analyses.toString().padStart(2, '0')}</span>
+            <span className="font-mono text-5xl font-bold mb-3" style={{ color: 'var(--ticker-up)' }}>{stats.analyses.toString().padStart(2, '0')}</span>
             <span className="text-xs text-[var(--text-secondary)]">Comprehensive reports</span>
           </div>
           <div className="px-8 flex flex-col">
@@ -116,10 +116,10 @@ const Dashboard = () => {
             {['Financial Analyzer', 'Cash Flow Forecaster', 'Risk Detector', 'Compliance Agent', 'Explainability Agent'].map((agent, i) => (
               <div key={i} className="flex justify-between items-center group">
                 <div className="flex items-center space-x-3 text-[var(--text-primary)]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary-accent)] shadow-[0_0_6px_var(--primary-accent)] group-hover:scale-150 transition-transform"></span>
-                  <span className="group-hover:text-[var(--primary-accent)] transition-colors font-semibold tracking-wide">{agent}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--electric-green)] shadow-[0_0_6px_var(--electric-green)] group-hover:scale-150 transition-transform"></span>
+                  <span className="group-hover:text-[var(--electric-green)] transition-colors font-semibold tracking-wide">{agent}</span>
                 </div>
-                <span className="text-[var(--secondary-accent)] text-[9px] tracking-widest">READY</span>
+                <span className="text-[var(--electric-green)] text-[9px] tracking-widest">READY</span>
               </div>
             ))}
           </div>
@@ -146,17 +146,17 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div>
+            <div className="border-t-2 border-[var(--electric-green)] pt-4 rounded">
               <div className="font-mono text-[9px] tracking-widest text-[var(--text-muted)] mb-3 uppercase">WEEK-OVER-WEEK TREND</div>
               <div className="flex justify-between items-end mb-3">
-                <span className="font-mono text-3xl font-bold text-[var(--secondary-accent)] flex items-center">
+                <span className="font-mono text-3xl font-bold text-[var(--electric-green)] flex items-center">
                   <span className="text-xl mr-2 rotate-[-0deg]">↑</span> 15%
                 </span>
                 <span className="font-body text-[10px] text-[var(--text-muted)] pb-1.5">Week-over-week growth</span>
               </div>
               <div className="flex gap-1 h-5 w-full justify-end">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className={`flex-1 ${i > 1 ? 'bg-[var(--secondary-accent)]' : 'bg-transparent border border-opacity-30 border-[var(--border-color)]'}`} style={{ opacity: i > 1 ? 0.3 + (i * 0.14) : 0.4 }}></div>
+                  <div key={i} className={`flex-1 ${i > 1 ? 'bg-[var(--electric-green)]' : 'bg-transparent border border-opacity-30 border-[var(--border-color)]'}`} style={{ opacity: i > 1 ? 0.3 + (i * 0.14) : 0.4 }}></div>
                 ))}
               </div>
             </div>
