@@ -111,26 +111,16 @@ const Analysis = () => {
                 </div>
               </div>
 
-              {selectedDocs.length === 0 && (
-                <p className="font-mono text-[10px] text-[var(--text-muted)] tracking-widest mb-2 text-center uppercase">
-                  ☑ Select at least one document above
-                </p>
-              )}
-              {selectedDocs.length > 0 && (
-                <p className="font-mono text-[10px] text-[var(--positive-color)] tracking-widest mb-2 text-center uppercase">
-                  ✓ {selectedDocs.length} document{selectedDocs.length > 1 ? 's' : ''} selected
-                </p>
-              )}
-              <button
-                onClick={handleRunAnalysis}
-                disabled={running || selectedDocs.length === 0}
-                className="btn-generate w-full py-3 px-6 mt-auto font-mono text-xs tracking-wider uppercase font-bold text-center"
-              >
-                {running ? 'INITIALIZING AGENTS...' : 'START ANALYSIS →'}
-              </button>
-            </>
-          )}
-        </div>
+                <button
+                  onClick={handleRunAnalysis}
+                  disabled={running || selectedDocs.length === 0}
+                  className="w-full bg-primary text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400"
+                >
+                  {running ? 'Starting Analysis...' : 'Start Analysis'}
+                </button>
+              </>
+            )}
+          </div>
 
         <div className="surface-card p-8 flex flex-col h-full">
           <h2 className="font-display text-2xl font-semibold mb-6 text-[var(--text-primary)]">Analysis History</h2>
