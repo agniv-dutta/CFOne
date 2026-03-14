@@ -4,6 +4,7 @@ import boto3
 import json
 import time
 import logging
+import base64
 from typing import Dict, List, Any, Optional
 from botocore.exceptions import ClientError
 from app.config import get_settings
@@ -34,6 +35,7 @@ class NovaClient:
             # Enforce Nova Pro for financial reasoning/calculation quality.
             # If not configured, fall back to explicit Nova Pro model id.
             self.model_id = settings.nova_pro_model_id or "amazon.nova-pro-v1:0"
+            self.sonic_model_id = settings.nova_sonic_model_id or "amazon.nova-sonic-v1:0"
             self.embedding_model_id = settings.titan_embedding_model_id
             logger.info(f"AWS Bedrock client initialized successfully (model={self.model_id})")
         except Exception as e:
@@ -181,3 +183,101 @@ class NovaClient:
             return len(test_embedding) > 0
         except:
             return False
+
+    def synthesize_speech_with_sonic(
+        self,
+        text: str,
+        voice_id: str = "Matthew",
+        audio_format: str = "mp3",
+    ) -> Dict[str, Any]:
+        """
+        Synthesize speech from text using Nova Sonic.
+
+        Returns:
+            {"audio_base64": "...", "mime_type": "audio/mpeg"}
+            or {"error": "..."}
+        """
+        if not text or not text.strip():
+            return {"error": "Cannot synthesize empty text"}
+
+        text = text.strip()
+        if len(text) > 3500:
+            text = text[:3500]
+
+        payload_variants = [
+            {
+                "inputText": text,
+                "audioGenerationConfig": {
+                    "voiceId": voice_id,
+                    "audioFormat": audio_format,
+                },
+            },
+            {
+                "messages": [{"role": "user", "content": [{"text": text}]}],
+                "outputModalities": ["AUDIO"],
+                "audioConfig": {
+                    "voiceId": voice_id,
+                    "format": audio_format,
+                },
+            },
+            {
+                "input": {"text": text},
+                "speech": {
+                    "voiceId": voice_id,
+                    "format": audio_format,
+                },
+            },
+        ]
+
+        for idx, payload in enumerate(payload_variants):
+            try:
+                # Variant 1: try receiving binary audio directly.
+                response = self.client.invoke_model(
+                    modelId=self.sonic_model_id,
+                    contentType="application/json",
+                    accept="audio/mpeg" if audio_format.lower() == "mp3" else "application/octet-stream",
+                    body=json.dumps(payload),
+                )
+                raw_audio = response["body"].read()
+                if raw_audio:
+                    return {
+                        "audio_base64": base64.b64encode(raw_audio).decode("utf-8"),
+                        "mime_type": "audio/mpeg" if audio_format.lower() == "mp3" else "audio/wav",
+                    }
+            except Exception as direct_audio_exc:
+                logger.warning(
+                    "Nova Sonic direct audio attempt %s failed: %s",
+                    idx + 1,
+                    str(direct_audio_exc),
+                )
+
+            try:
+                # Variant 2: try receiving JSON with audio payload in body.
+                response = self.client.invoke_model(
+                    modelId=self.sonic_model_id,
+                    contentType="application/json",
+                    accept="application/json",
+                    body=json.dumps(payload),
+                )
+                response_body = json.loads(response["body"].read())
+                audio_base64 = (
+                    response_body.get("audio")
+                    or response_body.get("audioBase64")
+                    or response_body.get("output", {}).get("audio")
+                    or response_body.get("outputAudio")
+                )
+                if audio_base64:
+                    return {
+                        "audio_base64": audio_base64,
+                        "mime_type": "audio/mpeg" if audio_format.lower() == "mp3" else "audio/wav",
+                    }
+            except Exception as json_audio_exc:
+                logger.warning(
+                    "Nova Sonic JSON audio attempt %s failed: %s",
+                    idx + 1,
+                    str(json_audio_exc),
+                )
+
+        return {
+            "error": "Nova Sonic speech synthesis failed for all supported request formats",
+        }

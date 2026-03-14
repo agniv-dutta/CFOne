@@ -24,10 +24,14 @@ class AskCFORequest(BaseModel):
     question: str
     analysis_id: Optional[str] = None
     chat_history: List[ChatMessage] = []
+    voice_response: bool = False
+    voice_id: str = "Matthew"
 
 
 class AskCFOResponse(BaseModel):
     answer: str
+    audio_base64: Optional[str] = None
+    audio_mime_type: Optional[str] = None
 
 
 # =====================================================================
@@ -257,5 +261,27 @@ async def ask_cfo(
             detail="AI model returned empty response",
         )
     
+    audio_base64 = None
+    audio_mime_type = None
+
+    if request.voice_response:
+        try:
+            voice_result = nova.synthesize_speech_with_sonic(
+                text=answer,
+                voice_id=request.voice_id,
+                audio_format="mp3",
+            )
+            if isinstance(voice_result, dict) and "audio_base64" in voice_result:
+                audio_base64 = voice_result.get("audio_base64")
+                audio_mime_type = voice_result.get("mime_type", "audio/mpeg")
+            else:
+                logger.warning("Voice response requested, but Nova Sonic returned no audio")
+        except Exception as voice_exc:
+            logger.warning("Voice synthesis failed, returning text only: %s", str(voice_exc))
+
     logger.info(f"AgentCFO response generated successfully: {len(answer)} chars")
-    return AskCFOResponse(answer=answer)
+    return AskCFOResponse(
+        answer=answer,
+        audio_base64=audio_base64,
+        audio_mime_type=audio_mime_type,
+    )

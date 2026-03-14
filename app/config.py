@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     # AWS Bedrock Models
     nova_lite_model_id: str = "amazon.nova-lite-v1:0"
     nova_pro_model_id: str = "amazon.nova-pro-v1:0"
+    nova_sonic_model_id: str = "amazon.nova-sonic-v1:0"
     nova_model_id: str = "amazon.nova-pro-v1:0"
     titan_embedding_model_id: str = "amazon.titan-embed-text-v2:0"
 
