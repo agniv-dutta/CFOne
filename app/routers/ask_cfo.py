@@ -10,6 +10,7 @@ from app.database import get_db
 from app import models
 from app.dependencies import get_current_user
 from app.services.nova_client import NovaClient
+from app.services.embeddings import VectorStore
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["ask-cfo"])
@@ -26,6 +27,8 @@ class AskCFORequest(BaseModel):
     chat_history: List[ChatMessage] = []
     voice_response: bool = False
     voice_id: str = "Matthew"
+    selected_text: Optional[str] = None
+    selected_section: Optional[str] = None
 
 
 class AskCFOResponse(BaseModel):
@@ -99,6 +102,9 @@ def _build_agentcfo_context_prompt(
     question: str,
     financial_report: dict,
     chat_history: List[ChatMessage],
+    selected_text: Optional[str] = None,
+    selected_section: Optional[str] = None,
+    retrieved_chunks: Optional[List[dict]] = None,
 ) -> str:
     """
     Build the full prompt with financial report context injected.
@@ -110,7 +116,7 @@ def _build_agentcfo_context_prompt(
     cashflow = financial_report.get("section_2_cash_flow_forecast", {})
     risk = financial_report.get("section_3_risk_alerts", {})
     actions = financial_report.get("section_6_recommended_actions", {})
-    
+
     # Build financial context block
     context_lines = [
         "FINANCIAL REPORT CONTEXT:",
@@ -142,6 +148,49 @@ def _build_agentcfo_context_prompt(
             f"  • Risk Level: {risk.get('risk_level', 'Unknown').upper()}",
             "",
         ])
+
+    if isinstance(actions, dict):
+        executive_summary = actions.get("executive_summary")
+        recommended_actions = actions.get("recommended_actions", [])
+        if executive_summary:
+            context_lines.extend([
+                "Executive Summary:",
+                executive_summary,
+                "",
+            ])
+        if recommended_actions:
+            context_lines.append("Top Recommended Actions:")
+            for action in recommended_actions[:3]:
+                if isinstance(action, dict):
+                    context_lines.append(
+                        f"  • {action.get('action', 'Action')}: {action.get('details', '')}"
+                    )
+            context_lines.append("")
+
+    if selected_text:
+        context_lines.extend([
+            "USER SELECTED REPORT TEXT:",
+            "=" * 70,
+            f"Section: {selected_section or 'Report'}",
+            selected_text,
+            "",
+        ])
+
+    if retrieved_chunks:
+        context_lines.extend([
+            "SUPPORTING EVIDENCE FROM SOURCE DOCUMENTS:",
+            "=" * 70,
+            "",
+        ])
+        for idx, chunk in enumerate(retrieved_chunks[:4], start=1):
+            metadata = chunk.get("metadata", {})
+            filename = metadata.get("filename", "source document")
+            similarity = chunk.get("similarity_score", 0)
+            context_lines.extend([
+                f"Evidence {idx} ({filename}, relevance {similarity:.2f}):",
+                chunk.get("chunk_text", ""),
+                "",
+            ])
     
     # Add conversation history
     history_lines = []
@@ -155,10 +204,46 @@ def _build_agentcfo_context_prompt(
     # Build final prompt
     full_prompt = "\n".join(context_lines + history_lines) + (
         f"CEO Question: {question}\n\n"
+        "If the question is about the selected text, treat that selected text as the primary focus and use supporting evidence only to clarify or justify your answer. "
         "Respond as AgentCFO with structured financial guidance:"
     )
     
     return full_prompt
+
+
+def _retrieve_analysis_chunks(
+    db: Session,
+    current_user: models.User,
+    analysis_id: str,
+    query_text: str,
+    nova: NovaClient,
+) -> List[dict]:
+    """Retrieve analysis-scoped evidence chunks for a selected-text follow-up."""
+    associations = (
+        db.query(models.AnalysisDocument)
+        .filter(models.AnalysisDocument.analysis_id == analysis_id)
+        .all()
+    )
+    document_ids = {assoc.document_id for assoc in associations}
+
+    if not document_ids or not query_text.strip():
+        return []
+
+    try:
+        vector_store = VectorStore(nova)
+        results = vector_store.search_similar(
+            query=query_text,
+            top_k=12,
+            filter_metadata={"user_id": current_user.user_id},
+        )
+        filtered = [
+            result for result in results
+            if result.get("document_id") in document_ids
+        ]
+        return filtered[:4]
+    except Exception as exc:
+        logger.warning("Failed to retrieve supporting chunks for ask-cfo: %s", str(exc))
+        return []
 
 
 # =====================================================================
@@ -210,16 +295,37 @@ async def ask_cfo(
     report = db.query(models.Report).filter(models.Report.analysis_id == request.analysis_id).first()
     financial_report = report.report_data if report else {}
     
+    try:
+        nova = NovaClient()
+    except Exception as exc:
+        logger.error(f"Failed to initialize Nova client for ask-cfo: {exc}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI service temporarily unavailable. Please try again.",
+        )
+
+    selected_text = request.selected_text.strip() if request.selected_text else None
+    retrieval_query = "\n\n".join(part for part in [selected_text, request.question] if part)
+    retrieved_chunks = _retrieve_analysis_chunks(
+        db=db,
+        current_user=current_user,
+        analysis_id=request.analysis_id,
+        query_text=retrieval_query,
+        nova=nova,
+    ) if selected_text else []
+
     # Build prompt with context injection
     prompt = _build_agentcfo_context_prompt(
         request.question,
         financial_report,
         request.chat_history,
+        selected_text=selected_text,
+        selected_section=request.selected_section,
+        retrieved_chunks=retrieved_chunks,
     )
     
     # Call Nova Pro with AgentCFO system prompt
     try:
-        nova = NovaClient()
         logger.info(f"Invoking Nova model for ask-cfo with question: {request.question[:100]}...")
         result = nova.invoke_agent(
             prompt=prompt,

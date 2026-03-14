@@ -11,7 +11,7 @@ import { askCFO } from "../../services/api";
  *   analysisId  – The completed analysis ID (required for context)
  *   reportData  – Optional report data for display context
  */
-const AskCFOChat = ({ analysisId, reportData }) => {
+const AskCFOChat = ({ analysisId, reportData, selectedContext = null }) => {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -26,14 +26,39 @@ const AskCFOChat = ({ analysisId, reportData }) => {
   const [listening, setListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [activeSelectionContext, setActiveSelectionContext] = useState(null);
   const bottomRef = useRef(null);
   const recognitionRef = useRef(null);
   const activeAudioRef = useRef(null);
+  const textareaRef = useRef(null);
 
   // Auto-scroll to newest message
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!selectedContext?.id || !selectedContext?.text) return;
+
+    setActiveSelectionContext({
+      text: selectedContext.text,
+      section: selectedContext.section || "Financial Analysis Report",
+    });
+
+    const trimmedText = selectedContext.text.trim();
+    const preview =
+      trimmedText.length > 240
+        ? `${trimmedText.slice(0, 240)}...`
+        : trimmedText;
+
+    setInput(
+      `Regarding this selected text from ${selectedContext.section || "the report"}: "${preview}"\n\nCan you explain what this means and what action I should take?`,
+    );
+
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 120);
+  }, [selectedContext?.id]);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -177,6 +202,8 @@ const AskCFOChat = ({ analysisId, reportData }) => {
         chat_history: historyForAPI,
         voice_response: voiceEnabled,
         voice_id: "Matthew",
+        selected_text: activeSelectionContext?.text || undefined,
+        selected_section: activeSelectionContext?.section || undefined,
       };
 
       const response = await askCFO(payload);
@@ -190,6 +217,7 @@ const AskCFOChat = ({ analysisId, reportData }) => {
         response.data.audio_base64,
         response.data.audio_mime_type,
       );
+      setActiveSelectionContext(null);
     } catch (err) {
       const errMsg =
         err.response?.data?.detail ||
@@ -352,6 +380,7 @@ const AskCFOChat = ({ analysisId, reportData }) => {
         </button>
 
         <textarea
+          ref={textareaRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
