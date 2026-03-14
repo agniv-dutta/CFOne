@@ -70,6 +70,10 @@ export const getAnalyses = (params) =>
 export const getAnalysis = (id) =>
   api.get(`/api/analysis/${id}`);
 
+// Ask CFO
+export const askCFO = (data) =>
+  api.post('/api/ask-cfo', data);
+
 // Health Check
 export const checkHealth = () =>
   api.get('/api/health');

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getAnalysis } from '../services/api';
 import LoadingSpinner from '../components/Common/LoadingSpinner';
+import AskCFOChat from '../components/AskCFO/AskCFOChat';
 
 const Report = () => {
   const { analysisId } = useParams();
@@ -288,6 +289,19 @@ const Report = () => {
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* Ask AgentCFO Chat – only show when analysis is completed */}
+      {report?.status === 'completed' && reportData && (
+        <div className="mt-8">
+          <div className="mb-6 border-b border-[var(--border-color)] pb-4">
+            <h2 className="font-display text-2xl text-[var(--text-primary)] tracking-wide mb-2">Ask AgentCFO</h2>
+            <p className="font-mono text-[10px] tracking-widest text-[var(--text-muted)] uppercase">
+              Get strategic CFO-level financial guidance on your report
+            </p>
+          </div>
+          <AskCFOChat analysisId={analysisId} reportData={reportData} />
         </div>
       )}
     </div>

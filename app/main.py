@@ -1,12 +1,11 @@
 """FastAPI main application for CFOne"""
-
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from app.config import get_settings
 from app.database import init_db
 from app.middleware.cors import setup_cors
 from app.middleware.error_handler import http_exception_handler, general_exception_handler
-from app.routers import auth, documents, analysis
+from app.routers import auth, documents, analysis, ask_cfo
 from app.services.nova_client import NovaClient
 from app.services.embeddings import VectorStore
 from datetime import datetime
@@ -41,6 +40,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 app.include_router(auth.router)
 app.include_router(documents.router)
 app.include_router(analysis.router)
+app.include_router(ask_cfo.router)
 
 
 @app.on_event("startup")
