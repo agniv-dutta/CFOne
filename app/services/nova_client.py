@@ -18,12 +18,19 @@ class NovaClient:
     def __init__(self):
         """Initialize AWS Bedrock client"""
         try:
-            self.client = boto3.client(
-                "bedrock-runtime",
-                region_name=settings.aws_region,
-                aws_access_key_id=settings.aws_access_key_id,
-                aws_secret_access_key=settings.aws_secret_access_key,
-            )
+            client_kwargs = {
+                "region_name": settings.aws_region,
+            }
+
+            # Only set explicit credentials when both key and secret are provided.
+            # Otherwise boto3's default credential chain is used.
+            if settings.aws_access_key_id and settings.aws_secret_access_key:
+                client_kwargs["aws_access_key_id"] = settings.aws_access_key_id
+                client_kwargs["aws_secret_access_key"] = settings.aws_secret_access_key
+                if settings.aws_session_token:
+                    client_kwargs["aws_session_token"] = settings.aws_session_token
+
+            self.client = boto3.client("bedrock-runtime", **client_kwargs)
             # Enforce Nova Pro for financial reasoning/calculation quality.
             # If not configured, fall back to explicit Nova Pro model id.
             self.model_id = settings.nova_pro_model_id or "amazon.nova-pro-v1:0"

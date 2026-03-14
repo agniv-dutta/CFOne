@@ -1,9 +1,14 @@
 """Configuration management for CFOne application"""
 
-from pydantic_settings import BaseSettings
+from pathlib import Path
+from pydantic.v1 import BaseSettings
 from functools import lru_cache
-import os
+from dotenv import load_dotenv
 
+# Load app/.env first, then fallback to project root .env.
+BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / "app" / ".env")
+load_dotenv(BASE_DIR / ".env")
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
@@ -11,6 +16,7 @@ class Settings(BaseSettings):
     # AWS Configuration
     aws_access_key_id: str = ""
     aws_secret_access_key: str = ""
+    aws_session_token: str = ""
     aws_region: str = "us-east-1"
 
     # Application Settings
@@ -49,7 +55,7 @@ class Settings(BaseSettings):
     request_timeout_seconds: int = 60
 
     class Config:
-        env_file = ".env"
+        env_file = "app/.env"
         case_sensitive = False
 
 
