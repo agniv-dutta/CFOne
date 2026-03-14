@@ -32,11 +32,9 @@ class NovaClient:
                     client_kwargs["aws_session_token"] = settings.aws_session_token
 
             self.client = boto3.client("bedrock-runtime", **client_kwargs)
-            # Enforce Nova Pro for financial reasoning/calculation quality.
-            # If not configured, fall back to explicit Nova Pro model id.
-            self.model_id = settings.nova_pro_model_id or "amazon.nova-pro-v1:0"
-            self.sonic_model_id = settings.nova_sonic_model_id or "amazon.nova-sonic-v1:0"
-            self.embedding_model_id = settings.titan_embedding_model_id
+            self.model_id = settings.nova_lite_model_id or "amazon.nova-2-lite-v1:0"
+            self.sonic_model_id = settings.nova_sonic_model_id or "amazon.nova-2-sonic-v1:0"
+            self.embedding_model_id = settings.embedding_model_id
             logger.info(f"AWS Bedrock client initialized successfully (model={self.model_id})")
         except Exception as e:
             logger.error(f"Failed to initialize AWS Bedrock client: {str(e)}")
