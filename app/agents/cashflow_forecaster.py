@@ -4,6 +4,7 @@ from app.agents.base_agent import BaseAgent
 from typing import Dict, Any
 import logging
 import json
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +55,7 @@ Output format must be valid JSON matching this structure:
             max_tokens=800,
             reasoning_effort="medium",
         )
-
-        return result
+        return self._apply_deterministic_cashflow_calculations(result, context)
 
     def _build_prompt(self, context: Dict[str, Any]) -> str:
         """Build prompt for cash flow forecasting"""
@@ -96,3 +96,62 @@ Return only valid JSON without any markdown formatting or explanations."""
                 logger.warning(f"Missing required key in output: {key}")
 
         return True
+
+    def _apply_deterministic_cashflow_calculations(self, output: Dict[str, Any], context: Dict[str, Any]) -> Dict[str, Any]:
+        """Deterministically recompute burn rate and runway from financial totals."""
+        if not isinstance(output, dict):
+            output = {}
+
+        financial_data = context.get("financial_data", {}) or {}
+
+        revenue_total = self._to_float(financial_data.get("revenue", {}).get("total"))
+        expenses_total = self._to_float(financial_data.get("expenses", {}).get("total"))
+        cash_equivalents = self._to_float(financial_data.get("cash_and_cash_equivalents"))
+
+        if revenue_total is None:
+            revenue_total = self._to_float(financial_data.get("financial_health", {}).get("total_revenue"))
+        if expenses_total is None:
+            expenses_total = self._to_float(financial_data.get("financial_health", {}).get("total_expenses"))
+
+        revenue_total = self._round2(revenue_total or 0.0)
+        expenses_total = self._round2(expenses_total or 0.0)
+        cash_equivalents = self._round2(cash_equivalents or 0.0)
+
+        # Strict formulas
+        monthly_burn_rate = self._round2(expenses_total / 12) if expenses_total > 0 else 0.0
+        runway_months = self._round2(cash_equivalents / monthly_burn_rate) if monthly_burn_rate > 0 else 0.0
+
+        output["current_cash_position"] = cash_equivalents
+        output["monthly_burn_rate"] = monthly_burn_rate
+        output["runway_months"] = runway_months
+
+        logger.info(
+            "CashFlowForecaster deterministic metrics: burn=%.2f runway=%.2f",
+            monthly_burn_rate,
+            runway_months,
+        )
+
+        return output
+
+    def _to_float(self, value: Any) -> float | None:
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+
+        text = str(value).strip()
+        if not text:
+            return None
+
+        text = text.replace(",", "")
+        text = re.sub(r"[^\d.\-]", "", text)
+        if text in {"", ".", "-", "-."}:
+          return None
+
+        try:
+            return float(text)
+        except (TypeError, ValueError):
+            return None
+
+    def _round2(self, value: float) -> float:
+        return round(float(value), 2)

@@ -24,9 +24,11 @@ class NovaClient:
                 aws_access_key_id=settings.aws_access_key_id,
                 aws_secret_access_key=settings.aws_secret_access_key,
             )
-            self.model_id = settings.nova_model_id
+            # Enforce Nova Pro for financial reasoning/calculation quality.
+            # If not configured, fall back to explicit Nova Pro model id.
+            self.model_id = settings.nova_pro_model_id or "amazon.nova-pro-v1:0"
             self.embedding_model_id = settings.titan_embedding_model_id
-            logger.info("AWS Bedrock client initialized successfully")
+            logger.info(f"AWS Bedrock client initialized successfully (model={self.model_id})")
         except Exception as e:
             logger.error(f"Failed to initialize AWS Bedrock client: {str(e)}")
             raise
@@ -40,7 +42,7 @@ class NovaClient:
         reasoning_effort: str = "medium",
     ) -> Dict[str, Any]:
         """
-        Invoke Nova 2 Lite model with given parameters
+        Invoke Nova model with given parameters
 
         Args:
             prompt: User/agent prompt text

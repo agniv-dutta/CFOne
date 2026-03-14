@@ -5,12 +5,17 @@ from typing import Dict, Any
 import logging
 import json
 from datetime import datetime
+from app.utils.cfo_recommendation_engine import CFORecommendationEngine
 
 logger = logging.getLogger(__name__)
 
 
 class AutomationAgent(BaseAgent):
-    """Identify compliance requirements and suggest automation opportunities"""
+    """Generate CFO-level strategic recommendations and identify compliance/automation opportunities"""
+
+    def __init__(self, nova_client):
+        super().__init__(nova_client)
+        self.cfo_engine = CFORecommendationEngine()
 
     SYSTEM_PROMPT = """You are a Compliance and Automation Agent. Identify upcoming tax deadlines, check for compliance issues, and suggest automation opportunities.
 Generate draft payment reminder emails. Recommend automated GST filing actions.
@@ -57,6 +62,13 @@ Output format must be valid JSON matching this structure:
         """Execute compliance and automation analysis"""
         logger.info("Starting Automation Agent execution")
 
+        # Get financial data from context
+        financial_data = context.get("financial_data", {})
+        
+        # Generate CFO recommendations using deterministic engine
+        cfo_analysis = self.cfo_engine.analyze_and_recommend(financial_data)
+        
+        # Build structured output with CFO recommendations first
         result, exec_time = self.run_with_retry(
             context=context,
             system_prompt=self.SYSTEM_PROMPT,
@@ -64,7 +76,15 @@ Output format must be valid JSON matching this structure:
             max_tokens=800,
             reasoning_effort="low",
         )
-
+        
+        # Merge CFO analysis into agent output
+        if isinstance(result, dict):
+            result["cfo_strategic_analysis"] = {
+                "risk_alerts": cfo_analysis["risk_alerts"],
+                "detected_scenarios": cfo_analysis["detected_scenarios"],
+                "recommended_actions": cfo_analysis["recommendations"],
+            }
+        
         return result
 
     def _build_prompt(self, context: Dict[str, Any]) -> str:
