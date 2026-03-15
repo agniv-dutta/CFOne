@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import Documents from './pages/Documents';
 import Analysis from './pages/Analysis';
 import Report from './pages/Report';
+import FinancialIntelligence from './pages/FinancialIntelligence';
 
 // Placeholder empty components that will be populated later, or using the existing ones
 const ReportsPlaceholder = () => (
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/analysis" element={<Analysis />} />
+            <Route path="/financial-intelligence" element={<FinancialIntelligence />} />
             <Route path="/reports" element={<ReportsPlaceholder />} />
             <Route path="/report/:analysisId" element={<Report />} />
           </Route>

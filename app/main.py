@@ -5,7 +5,7 @@ from app.config import get_settings
 from app.database import init_db
 from app.middleware.cors import setup_cors
 from app.middleware.error_handler import http_exception_handler, general_exception_handler
-from app.routers import auth, documents, analysis, ask_cfo
+from app.routers import auth, documents, analysis, ask_cfo, dashboard
 from app.services.nova_client import NovaClient
 from app.services.embeddings import VectorStore
 from datetime import datetime
@@ -41,6 +41,7 @@ app.include_router(auth.router)
 app.include_router(documents.router)
 app.include_router(analysis.router)
 app.include_router(ask_cfo.router)
+app.include_router(dashboard.router)
 
 
 @app.on_event("startup")

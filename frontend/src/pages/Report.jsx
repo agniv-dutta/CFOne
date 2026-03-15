@@ -199,12 +199,12 @@ const Report = () => {
             Financial Analysis Report
           </h1>
         </div>
-        <div className="text-right">
+        <div className="text-right space-y-3">
           <p className="font-mono text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-1">
             Status
           </p>
           <span
-            className={`px-3 py-1 text-[11px] font-mono tracking-widest uppercase rounded-sm border ${
+            className={`px-3 py-1 text-[11px] font-mono tracking-widest uppercase rounded-sm border block ${
               report?.status === "completed"
                 ? "border-[var(--positive-color)] text-[var(--positive-color)]"
                 : "border-[var(--negative-color)] text-[var(--negative-color)]"
@@ -212,6 +212,17 @@ const Report = () => {
           >
             {report?.status}
           </span>
+          {report?.status === "completed" && (
+            <button
+              onClick={() => {
+                localStorage.setItem('lastAnalysisId', analysisId);
+                navigate('/financial-intelligence');
+              }}
+              className="w-full px-3 py-2 text-[11px] font-mono tracking-widest uppercase rounded-sm border border-[var(--primary-accent)] text-[var(--primary-accent)] hover:bg-[var(--primary-accent)] hover:text-[var(--bg-color)] transition-all"
+            >
+              📊 Dashboard
+            </button>
+          )}
         </div>
       </div>
 

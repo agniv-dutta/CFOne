@@ -74,6 +74,13 @@ export const getAnalysis = (id) =>
 export const askCFO = (data) =>
   api.post('/api/ask-cfo', data);
 
+// Financial Intelligence Dashboard
+export const getDashboardCharts = (analysisId) =>
+  api.get(`/api/dashboard/charts/${analysisId}`);
+
+export const generateDashboardInsights = (data) =>
+  api.post('/api/dashboard/insights', data);
+
 // Health Check
 export const checkHealth = () =>
   api.get('/api/health');
