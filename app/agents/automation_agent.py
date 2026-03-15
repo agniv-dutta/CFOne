@@ -76,6 +76,9 @@ Output format must be valid JSON matching this structure:
             max_tokens=800,
             reasoning_effort="low",
         )
+
+        # Normalize shape so downstream consumers always get structured arrays.
+        result = self._normalize_output(result)
         
         # Merge CFO analysis into agent output
         if isinstance(result, dict):
@@ -86,6 +89,44 @@ Output format must be valid JSON matching this structure:
             }
         
         return result
+
+    def _normalize_output(self, output: Dict[str, Any]) -> Dict[str, Any]:
+        """Coerce model output into the expected compliance schema."""
+        if not isinstance(output, dict):
+            return {
+                "upcoming_deadlines": [],
+                "compliance_issues": [],
+                "automation_suggestions": [],
+                "draft_emails": [],
+            }
+
+        normalized = dict(output)
+
+        # Some model responses return a single deadline object at the root.
+        if "upcoming_deadlines" not in normalized and all(
+            key in normalized for key in ["type", "due_date", "description"]
+        ):
+            normalized["upcoming_deadlines"] = [
+                {
+                    "type": normalized.get("type", ""),
+                    "due_date": normalized.get("due_date", ""),
+                    "description": normalized.get("description", ""),
+                    "estimated_amount": float(normalized.get("estimated_amount", 0) or 0),
+                    "status": normalized.get("status", "pending"),
+                }
+            ]
+
+        required_keys = ["upcoming_deadlines", "compliance_issues", "automation_suggestions", "draft_emails"]
+        for key in required_keys:
+            value = normalized.get(key)
+            if isinstance(value, list):
+                continue
+            if value is None:
+                normalized[key] = []
+            else:
+                normalized[key] = [value] if isinstance(value, dict) else []
+
+        return normalized
 
     def _build_prompt(self, context: Dict[str, Any]) -> str:
         """Build prompt for compliance and automation"""
@@ -136,6 +177,7 @@ Return only valid JSON without any markdown formatting or explanations."""
         if not super()._validate_output(output):
             return False
 
+        output = self._normalize_output(output)
         required_keys = ["upcoming_deadlines", "compliance_issues", "automation_suggestions", "draft_emails"]
 
         for key in required_keys:

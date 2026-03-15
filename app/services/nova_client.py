@@ -5,6 +5,7 @@ import json
 import time
 import logging
 import base64
+import re
 from typing import Dict, List, Any, Optional
 from botocore.exceptions import ClientError
 from app.config import get_settings
@@ -32,13 +33,103 @@ class NovaClient:
                     client_kwargs["aws_session_token"] = settings.aws_session_token
 
             self.client = boto3.client("bedrock-runtime", **client_kwargs)
-            self.model_id = settings.nova_lite_model_id or "amazon.nova-2-lite-v1:0"
-            self.sonic_model_id = settings.nova_sonic_model_id or "amazon.nova-2-sonic-v1:0"
+            self.model_id = settings.nova_lite_model_id or "global.amazon.nova-2-lite-v1:0"
+            self.sonic_model_id = settings.nova_sonic_model_id or "global.amazon.nova-2-sonic-v1:0"
             self.embedding_model_id = settings.embedding_model_id
             logger.info(f"AWS Bedrock client initialized successfully (model={self.model_id})")
         except Exception as e:
             logger.error(f"Failed to initialize AWS Bedrock client: {str(e)}")
             raise
+
+    @staticmethod
+    def _profile_model_candidates(model_id: str) -> List[str]:
+        """Return candidate inference-profile model IDs for a given model ID."""
+        candidates = [model_id]
+        if model_id.startswith("amazon."):
+            candidates.append(f"global.{model_id}")
+        return candidates
+
+    @staticmethod
+    def _parse_json_response(response_text: str) -> Optional[Dict[str, Any]]:
+        """Parse JSON from raw model output, including markdown-fenced JSON."""
+        candidates = []
+        text = (response_text or "").strip()
+        if not text:
+            return None
+
+        # Candidate 1: full text as-is.
+        candidates.append(text)
+
+        # Candidate 2+: markdown-fenced blocks.
+        if "```" in text:
+            parts = text.split("```")
+            for idx in range(1, len(parts), 2):
+                block = parts[idx].strip()
+                if block.lower().startswith("json"):
+                    block = block.split("\n", 1)[1].strip() if "\n" in block else ""
+                if block:
+                    candidates.append(block)
+
+        # Candidate N: broad brace extraction.
+        first_brace = text.find("{")
+        last_brace = text.rfind("}")
+        if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+            candidates.append(text[first_brace : last_brace + 1].strip())
+
+        decoder = json.JSONDecoder()
+
+        def try_load_json(raw: str) -> Optional[Dict[str, Any]]:
+            raw = raw.strip()
+            if not raw:
+                return None
+
+            # Attempt strict JSON first.
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, dict):
+                    return parsed
+            except json.JSONDecodeError:
+                pass
+
+            # Attempt extracting first JSON object from mixed prose.
+            for idx, ch in enumerate(raw):
+                if ch != "{":
+                    continue
+                try:
+                    parsed, _ = decoder.raw_decode(raw[idx:])
+                    if isinstance(parsed, dict):
+                        return parsed
+                except json.JSONDecodeError:
+                    continue
+
+            # Normalize common model JSON quirks and retry.
+            normalized = raw
+            normalized = normalized.replace("\u201c", '"').replace("\u201d", '"')
+            normalized = normalized.replace("\u2018", "'").replace("\u2019", "'")
+            normalized = re.sub(r",\s*([}\]])", r"\1", normalized)  # remove trailing commas
+            normalized = re.sub(r"\bTrue\b", "true", normalized)
+            normalized = re.sub(r"\bFalse\b", "false", normalized)
+            normalized = re.sub(r"\bNone\b", "null", normalized)
+
+            try:
+                parsed = json.loads(normalized)
+                if isinstance(parsed, dict):
+                    return parsed
+            except json.JSONDecodeError:
+                return None
+
+            return None
+
+        seen = set()
+        for candidate in candidates:
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            parsed = try_load_json(candidate)
+            if parsed is not None:
+                return parsed
+
+        return None
 
     def invoke_agent(
         self,
@@ -61,20 +152,52 @@ class NovaClient:
         Returns:
             Parsed JSON response from model
         """
+        model_candidates = self._profile_model_candidates(self.model_id)
         for attempt in range(settings.max_retries):
             try:
                 logger.info(f"Invoking Nova model (attempt {attempt + 1}/{settings.max_retries})")
 
                 # Invoke model via converse API
-                response = self.client.converse(
-                    modelId=self.model_id,
-                    messages=[{"role": "user", "content": [{"text": prompt}]}],
-                    system=[{"text": system_prompt}],
-                    inferenceConfig={
-                        "temperature": temperature,
-                        "maxTokens": max_tokens,
-                    },
-                )
+                last_client_error = None
+                response = None
+                selected_model_id = None
+                for candidate in model_candidates:
+                    selected_model_id = candidate
+                    try:
+                        response = self.client.converse(
+                            modelId=candidate,
+                            messages=[{"role": "user", "content": [{"text": prompt}]}],
+                            system=[{"text": system_prompt}],
+                            inferenceConfig={
+                                "temperature": temperature,
+                                "maxTokens": max_tokens,
+                            },
+                        )
+                        break
+                    except ClientError as candidate_error:
+                        last_client_error = candidate_error
+                        error_code = candidate_error.response.get("Error", {}).get("Code", "")
+                        error_message = candidate_error.response.get("Error", {}).get("Message", "")
+
+                        # When on-demand model IDs are rejected, try inference-profile candidate.
+                        if (
+                            error_code == "ValidationException"
+                            and "on-demand throughput" in error_message.lower()
+                            and candidate != model_candidates[-1]
+                        ):
+                            logger.warning(
+                                "Model ID %s rejected for on-demand throughput; retrying with inference-profile ID.",
+                                candidate,
+                            )
+                            continue
+                        raise
+
+                if response is None and last_client_error is not None:
+                    raise last_client_error
+
+                if selected_model_id and selected_model_id != self.model_id:
+                    self.model_id = selected_model_id
+                    logger.info("Switched Nova model ID to %s", self.model_id)
 
                 # Extract response text from converse API response
                 content_blocks = response["output"]["message"]["content"]
@@ -84,25 +207,14 @@ class NovaClient:
 
                 logger.info(f"Nova model invoked successfully")
 
-                # Try to parse as JSON
-                try:
-                    # Clean up response text (remove markdown code blocks if present)
-                    cleaned_text = response_text.strip()
-                    if cleaned_text.startswith("```json"):
-                        cleaned_text = cleaned_text[7:]
-                    if cleaned_text.startswith("```"):
-                        cleaned_text = cleaned_text[3:]
-                    if cleaned_text.endswith("```"):
-                        cleaned_text = cleaned_text[:-3]
-                    cleaned_text = cleaned_text.strip()
-
-                    parsed_response = json.loads(cleaned_text)
+                # Try to parse as JSON (including markdown-fenced JSON)
+                parsed_response = self._parse_json_response(response_text)
+                if parsed_response is not None:
                     return parsed_response
 
-                except json.JSONDecodeError:
-                    # If not JSON, return as text in a dict
-                    logger.warning("Response is not valid JSON, returning as text")
-                    return {"response": response_text, "raw_text": True}
+                # If not JSON, return as text in a dict
+                logger.warning("Response is not valid JSON, returning as text")
+                return {"response": response_text, "raw_text": True}
 
             except ClientError as e:
                 error_code = e.response.get("Error", {}).get("Code", "")

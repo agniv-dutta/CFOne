@@ -5,10 +5,9 @@ from pydantic.v1 import BaseSettings
 from functools import lru_cache
 from dotenv import load_dotenv
 
-# Load app/.env first, then fallback to project root .env.
+# Load environment variables only from app/.env.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / "app" / ".env")
-load_dotenv(BASE_DIR / ".env")
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
@@ -43,9 +42,9 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
 
     # AWS Bedrock Models
-    nova_lite_model_id: str = "amazon.nova-2-lite-v1:0"
-    nova_sonic_model_id: str = "amazon.nova-2-sonic-v1:0"
-    nova_model_id: str = "amazon.nova-2-lite-v1:0"
+    nova_lite_model_id: str = "global.amazon.nova-2-lite-v1:0"
+    nova_sonic_model_id: str = "global.amazon.nova-2-sonic-v1:0"
+    nova_model_id: str = "global.amazon.nova-2-lite-v1:0"
     embedding_model_id: str = "amazon.nova-2-multimodal-embeddings-v1:0"
 
     # Processing Settings
