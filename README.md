@@ -1,294 +1,226 @@
-# CFOne - AI Chief Financial Officer
+﻿<div align="center">
 
-CFOne is an autonomous AI Chief Financial Officer system designed for small and medium enterprises. It analyzes financial documents (bank statements, GST reports, Excel sheets) to provide financial health summaries, cash flow forecasts, risk detection, compliance reminders, loan approval insights, and actionable recommendations.
+# CFOne
 
-## Features
+### Autonomous AI Chief Financial Officer for SMEs
 
-- **Multi-Agent AI System**: 5 specialized AI agents powered by AWS Bedrock Nova 2 Lite
-  - Financial Analyzer: Extract structured financial data
-  - Cash Flow Forecaster: Predict future cash positions
-  - Risk Detector: Identify financial risks and anomalies
-  - Compliance Agent: Track tax deadlines and suggest automation
-  - Explainability Agent: Provide clear insights and recommendations
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black" />
+  <img src="https://img.shields.io/badge/AWS%20Bedrock-Nova%20Lite-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white" />
+  <img src="https://img.shields.io/badge/ChromaDB-Vector%20Store-8B5CF6?style=for-the-badge" />
+</p>
 
-- **Document Processing**: Upload and analyze PDFs and Excel files
-- **Web Interface**: React-based UI for document management and report viewing
-- **RESTful API**: FastAPI backend with automatic OpenAPI documentation
-- **Secure Authentication**: JWT-based authentication system
-- **Vector Search**: Semantic search capabilities using ChromaDB
+> CFOne turns raw financial documents into actionable intelligence through a pipeline of five AI agents powered by AWS Bedrock.
 
-## Architecture
+</div>
 
-- **Backend**: FastAPI (Python)
-- **Frontend**: React + Vite + Tailwind CSS
-- **Database**: SQLite
-- **AI Models**: AWS Bedrock (Nova 2 Lite, Titan Embeddings)
-- **Vector Store**: ChromaDB
-- **Document Parsing**: pdfplumber, openpyxl
+---
 
-## Prerequisites
+## Tech Stack
 
-- Python 3.9+
-- Node.js 18+
-- AWS Account with Bedrock access
-- AWS credentials with permissions for Bedrock Runtime
+| Layer                | Technology                                          |
+| -------------------- | --------------------------------------------------- |
+| **Backend**          | Python 3.9+, FastAPI, SQLite, SQLAlchemy            |
+| **AI / LLM**         | AWS Bedrock — Amazon Nova Lite, Titan Embeddings V2 |
+| **Vector Store**     | ChromaDB                                            |
+| **Document Parsing** | pdfplumber, openpyxl                                |
+| **Frontend**         | React 18, Vite 5, Tailwind CSS, Recharts            |
+| **Auth**             | JWT, bcrypt                                         |
 
-## Setup Instructions
-
-### 1. Backend Setup
-
-```bash
-# Navigate to project directory
-cd CFOne
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Linux/Mac:
-source venv/bin/activate
-# On Windows:
-venv\Scripts\activate
-
-# Install Python dependencies
-pip install -r requirements.txt
-
-# Create environment file
-cp .env.example .env
-
-# Edit .env file with your AWS credentials and settings
-# Required variables:
-# - AWS_ACCESS_KEY_ID
-# - AWS_SECRET_ACCESS_KEY
-# - AWS_REGION (default: us-east-1)
-# - SECRET_KEY (generate with: openssl rand -hex 32)
-
-# Create required directories
-mkdir -p data/vector_store uploads logs
-
-# Initialize database (will be created automatically on first run)
-# Run the application
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-The backend API will be available at:
-- API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-### 2. Frontend Setup
-
-```bash
-# Navigate to frontend directory
-cd frontend
-
-# Install Node.js dependencies
-npm install
-
-# Create environment file
-cp .env.example .env
-
-# Edit .env file if needed (default points to localhost:8000)
-# VITE_API_BASE_URL=http://localhost:8000
-
-# Run development server
-npm run dev
-```
-
-The frontend will be available at: http://localhost:5173
-
-### 3. AWS Bedrock Setup
-
-Ensure your AWS account has access to:
-- Amazon Bedrock
-- Nova 2 Lite model (global.amazon.nova-2-lite-v1:0)
-- Titan Embeddings model (amazon.titan-embed-text-v1)
-
-Your IAM user/role needs permissions:
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "bedrock:InvokeModel",
-        "bedrock:InvokeModelWithResponseStream"
-      ],
-      "Resource": [
-        "arn:aws:bedrock:*::foundation-model/global.amazon.nova-2-lite-v1:0",
-        "arn:aws:bedrock:*::foundation-model/amazon.titan-embed-text-v1"
-      ]
-    }
-  ]
-}
-```
-
-## Usage
-
-### 1. Register and Login
-
-1. Navigate to http://localhost:5173
-2. Click "Register" and create an account
-3. Login with your credentials
-
-### 2. Upload Documents
-
-1. Go to "Documents" page
-2. Click "Upload Documents"
-3. Select PDF or Excel files (bank statements, GST reports, sales sheets)
-4. Wait for processing to complete
-
-### 3. Run Analysis
-
-1. Go to "Analysis" page
-2. Select documents to analyze
-3. Click "Start Analysis"
-4. Wait for analysis to complete (3-5 minutes)
-
-### 4. View Reports
-
-1. Click "View Report" on completed analysis
-2. Review all 6 sections:
-   - Financial Health Overview
-   - Cash Flow Forecast
-   - Risk Alerts
-   - Compliance & Automation
-   - Loan Readiness Score
-   - Recommended Actions
+---
 
 ## Project Structure
 
 ```
 CFOne/
-├── app/                      # Backend application
-│   ├── agents/              # AI agent implementations
-│   ├── routers/             # API endpoints
-│   ├── services/            # AWS Bedrock, vector store
-│   ├── utils/               # Parsers, auth, metrics
-│   ├── models.py            # Database models
-│   ├── schemas.py           # Pydantic schemas
-│   ├── database.py          # Database setup
-│   └── main.py              # FastAPI application
-├── frontend/                 # React application
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── pages/           # Page components
-│   │   ├── context/         # Auth context
-│   │   ├── services/        # API client
-│   │   └── App.jsx          # Main app component
-│   └── package.json
-├── data/                     # SQLite database and vector store
-├── uploads/                  # Uploaded documents
-├── requirements.txt          # Python dependencies
-├── .env.example             # Environment template
-└── README.md
+├── app/
+│   ├── agents/
+│   │   ├── base_agent.py               # Shared agent base class
+│   │   ├── financial_analyzer.py       # Extracts revenue, expenses, margins
+│   │   ├── cashflow_forecaster.py      # 3/6-month cash flow projections
+│   │   ├── risk_detector.py            # Anomaly and fraud detection
+│   │   ├── automation_agent.py         # GST/tax compliance & automation
+│   │   └── explainability_agent.py     # Plain-language CFO summaries
+│   ├── routers/
+│   │   ├── auth.py                     # Register / login
+│   │   ├── documents.py                # Upload, list, delete
+│   │   ├── analysis.py                 # Run analysis, fetch reports
+│   │   ├── ask_cfo.py                  # RAG chat endpoint
+│   │   └── dashboard.py                # Stats endpoint
+│   ├── services/
+│   │   ├── nova_client.py              # AWS Bedrock API client
+│   │   ├── embeddings.py               # ChromaDB vector store wrapper
+│   │   └── s3_service.py
+│   ├── utils/
+│   │   ├── pdf_parser.py
+│   │   ├── excel_parser.py
+│   │   ├── financial_metrics.py        # Loan readiness, ratios
+│   │   └── cfo_recommendation_engine.py
+│   ├── middleware/
+│   │   ├── cors.py
+│   │   └── error_handler.py
+│   ├── main.py
+│   ├── config.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── database.py
+│   └── dependencies.py
+├── frontend/
+│   └── src/
+│       ├── pages/               # Dashboard, Analysis, Documents, Report, FinancialIntelligence, Reports
+│       ├── components/          # Navbar, ThemeLayout, ProtectedRoute, AskCFOChat
+│       ├── context/             # AuthContext
+│       └── services/            # Axios API client
+├── data/
+│   └── vector_store/
+├── uploads/
+├── logs/
+└── requirements.txt
 ```
 
-## API Endpoints
+---
 
-### Authentication
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login and get JWT token
+## Features
 
-### Documents
-- `POST /api/documents/upload` - Upload documents
-- `GET /api/documents` - List all documents
-- `GET /api/documents/{id}` - Get document details
-- `DELETE /api/documents/{id}` - Delete document
+| Agent                         | What it does                               |
+| ----------------------------- | ------------------------------------------ |
+| Financial Analyzer            | Revenue, expenses, liabilities, margins    |
+| Cash Flow Forecaster          | 3 & 6-month projections, burn rate, runway |
+| Risk Detector                 | Anomalies, fraud flags, risk score         |
+| Compliance & Automation Agent | GST/tax deadlines, automation suggestions  |
+| Explainability Agent          | Plain-language CFO-level recommendations   |
 
-### Analysis
-- `POST /api/analysis/run` - Start new analysis
-- `GET /api/analysis` - List all analyses
-- `GET /api/analysis/{id}` - Get analysis report
+- **Document ingestion** — PDF and Excel/CSV upload, chunked and embedded into ChromaDB
+- **Ask CFO** — RAG-powered conversational Q&A over your own financial documents
+- **Reports** — Full structured report per analysis run with charts and export
+- **Auth** — JWT-based login with per-user document and analysis isolation
 
-### Health
-- `GET /api/health` - Check system health
+---
 
-## Development
+## Getting Started
 
-### Run Tests
+### 1 — Clone
+
 ```bash
-# Backend tests
-pytest
-
-# Frontend tests
-cd frontend && npm test
+git clone https://github.com/your-username/cfone.git
+cd cfone
 ```
 
-### Code Formatting
+### 2 — Backend
+
 ```bash
-# Backend (Python)
-black app/
-flake8 app/
+python -m venv venv
+venv\Scripts\activate          # Windows
+source venv/bin/activate        # macOS / Linux
 
-# Frontend (JavaScript)
-cd frontend && npm run lint
+pip install -r requirements.txt
+
+copy app\.env.example app\.env  # Windows
+cp app/.env.example app/.env    # macOS / Linux
 ```
 
-### Production Build
+Edit `app/.env` (minimum required values):
+
+```env
+AWS_ACCESS_KEY_ID=your_key
+AWS_SECRET_ACCESS_KEY=your_secret
+AWS_REGION=us-east-1
+SECRET_KEY=your_jwt_secret     # openssl rand -hex 32
+```
+
 ```bash
-# Backend: Use production ASGI server
-gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker
-
-# Frontend: Build for production
-cd frontend && npm run build
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+### 3 — Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Frontend: **http://localhost:5173** | API docs: **http://localhost:8000/docs**
+
+### 4 — AWS Bedrock
+
+Enable these models in your region (`us-east-1`):
+
+| Model                      | ID                               |
+| -------------------------- | -------------------------------- |
+| Amazon Nova Lite           | `global.amazon.nova-2-lite-v1:0` |
+| Amazon Titan Embeddings V2 | `amazon.titan-embed-text-v2:0`   |
+
+Required IAM permissions: `bedrock:InvokeModel`, `bedrock:InvokeModelWithResponseStream`
+
+---
+
+## API Reference
+
+| Method   | Endpoint                | Description               |
+| -------- | ----------------------- | ------------------------- |
+| `POST`   | `/api/auth/register`    | Register a new user       |
+| `POST`   | `/api/auth/login`       | Login and get JWT         |
+| `POST`   | `/api/documents/upload` | Upload PDF or Excel       |
+| `GET`    | `/api/documents`        | List documents            |
+| `DELETE` | `/api/documents/{id}`   | Delete document           |
+| `POST`   | `/api/analysis/run`     | Start analysis (5 agents) |
+| `GET`    | `/api/analysis`         | List past analyses        |
+| `GET`    | `/api/analysis/{id}`    | Get full report           |
+| `POST`   | `/api/ask-cfo`          | Ask a question (RAG)      |
+| `GET`    | `/api/health`           | Health check              |
+
+---
 
 ## Environment Variables
 
-### Backend (.env)
-```
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
+```env
+# AWS
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
 AWS_REGION=us-east-1
-SECRET_KEY=your_jwt_secret
+
+# App
+APP_ENV=development
+DEBUG=true
+SECRET_KEY=
+JWT_EXPIRATION_HOURS=24
+
+# Database
 DATABASE_URL=sqlite:///./data/cfone.db
+
+# Storage
 UPLOAD_DIR=./uploads
+MAX_UPLOAD_SIZE_MB=10
 VECTOR_STORE_PATH=./data/vector_store
+
+# Server
 API_HOST=0.0.0.0
 API_PORT=8000
 CORS_ORIGINS=http://localhost:5173
+
+# Models (defaults pre-set in config.py)
+NOVA_LITE_MODEL_ID=global.amazon.nova-2-lite-v1:0
+EMBEDDING_MODEL_ID=amazon.titan-embed-text-v2:0
 ```
 
-### Frontend (.env)
-```
-VITE_API_BASE_URL=http://localhost:8000
-```
+---
 
-## Troubleshooting
+## Limitations
 
-### AWS Bedrock Connection Issues
-- Verify AWS credentials are correct
-- Check AWS region is set to supported region (us-east-1)
-- Ensure IAM permissions are granted for Bedrock access
+- **Single-document analysis only** — the Analysis page supports selecting one document per run; multi-document batch analysis is not exposed in the UI
+- **SQLite backend** — suitable for development and single-user use; not recommended for concurrent multi-user production deployments
+- **No real-time streaming** — agent responses are returned as a single payload after all five agents complete; there is no token-by-token streaming to the frontend
+- **Indian tax compliance only** — the Compliance & Automation Agent is tuned for GST, TDS, and Indian Income Tax; other jurisdictions are not covered
+- **AWS region dependency** — Nova Lite and Titan Embeddings V2 must be enabled in your selected AWS region; cross-region inference is required for Nova Lite
+- **No file versioning** — re-uploading a document with the same name creates a new record; there is no deduplication or version history
+- **No scheduled runs** — analyses must be triggered manually; there is no cron-based or event-driven automation
+- **Ask CFO context window** — RAG retrieval is limited to the top-k chunks in ChromaDB; very large documents may lose precision if relevant chunks fall outside the retrieved set
 
-### Database Issues
-- Delete `data/cfone.db` and restart to reset database
-- Check file permissions on data directory
-
-### Upload Issues
-- Verify file size is under 10MB
-- Check supported formats: PDF, .xlsx, .xls
-- Ensure uploads directory exists and is writable
-
-### Frontend Connection Issues
-- Verify backend is running on port 8000
-- Check CORS_ORIGINS in backend .env includes frontend URL
-- Clear browser cache and localStorage
-
-## Security Notes
-
-- Never commit `.env` files to version control
-- Generate secure SECRET_KEY: `openssl rand -hex 32`
-- Use HTTPS in production
-- Rotate AWS credentials regularly
-- Enable rate limiting for production deployments
+---
 
 ## License
 
-Copyright © 2025 CFOne. All rights reserved.
-
-## Support
-
-For issues and questions, please contact support or file an issue in the repository.
+Copyright © 2026 CFOne. All rights reserved.

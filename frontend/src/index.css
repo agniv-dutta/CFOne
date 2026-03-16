@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600;1,700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -17,8 +17,6 @@
   --nav-bg: rgba(15, 13, 11, 0.95);
   --nav-border: #2d2416;
   --nav-link-color: #e8b923;
-  --ticker-bg: #cd7f32;
-  --ticker-text-color: #0f0d0b;
   --ticker-up: #00ff41;
   --ticker-down: #f87171;
   --scanline-display: block;
@@ -40,8 +38,6 @@ html.light {
   --nav-bg: rgba(255, 245, 240, 0.95);
   --nav-border: #f0ddd5;
   --nav-link-color: #5a3825;
-  --ticker-bg: #ff6b35;
-  --ticker-text-color: #2d1810;
   --ticker-up: #c44536;
   --ticker-down: #ef4444;
   --scanline-display: none;
@@ -52,8 +48,18 @@ html.light {
 
 body {
   margin: 0;
-  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family:
+    "IBM Plex Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Roboto",
+    "Oxygen",
+    "Ubuntu",
+    "Cantarell",
+    "Fira Sans",
+    "Droid Sans",
+    "Helvetica Neue",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -62,15 +68,15 @@ body {
 }
 
 .font-mono {
-  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  font-family: "IBM Plex Mono", "Courier New", monospace;
 }
 
 .font-display {
-  font-family: 'Playfair Display', serif;
+  font-family: "Playfair Display", serif;
 }
 
 .font-body {
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: "IBM Plex Sans", sans-serif;
 }
 
 .fade-delay-2 {
@@ -95,7 +101,10 @@ body {
 
 /* Theming transition */
 * {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease;
 }
 
 /* Custom Scrollbar */
@@ -122,10 +131,12 @@ body {
   height: 100vh;
   pointer-events: none;
   z-index: 999;
-  background: repeating-linear-gradient(rgba(205, 127, 50, 0.03),
-      rgba(205, 127, 50, 0.03) 1px,
-      transparent 1px,
-      transparent 3px);
+  background: repeating-linear-gradient(
+    rgba(205, 127, 50, 0.03),
+    rgba(205, 127, 50, 0.03) 1px,
+    transparent 1px,
+    transparent 3px
+  );
   display: var(--scanline-display);
   animation: scanlineFlicker 8s infinite;
 }
@@ -138,7 +149,11 @@ body {
   height: 100vh;
   pointer-events: none;
   z-index: 998;
-  background: radial-gradient(circle, transparent 50%, rgba(15, 13, 11, 0.8) 150%);
+  background: radial-gradient(
+    circle,
+    transparent 50%,
+    rgba(15, 13, 11, 0.8) 150%
+  );
   display: var(--scanline-display);
 }
 
@@ -168,20 +183,6 @@ body {
   }
 }
 
-/* Ticker Animation */
-@keyframes ticker {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-ticker {
-  animation: ticker 30s linear infinite;
-}
-
 /* Fade Up Animation */
 @keyframes fadeUp {
   from {
@@ -201,10 +202,12 @@ body {
 
 /* Blink Animation */
 @keyframes blink {
-  0%, 49% {
+  0%,
+  49% {
     opacity: 1;
   }
-  50%, 100% {
+  50%,
+  100% {
     opacity: 0;
   }
 }

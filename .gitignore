@@ -1,4 +1,7 @@
 uploads/
+data/cfone.db
+data/vector_store/
+logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
