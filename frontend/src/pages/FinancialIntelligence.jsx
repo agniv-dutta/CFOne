@@ -15,9 +15,45 @@ const FinancialIntelligence = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isDark, setIsDark] = useState(!document.documentElement.classList.contains('light'));
 
   // Get analysis ID from URL or session
   const analysisId = localStorage.getItem('lastAnalysisId');
+
+  // Detect theme changes
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          setIsDark(!document.documentElement.classList.contains('light'));
+        }
+      });
+    });
+    
+    observer.observe(document.documentElement, { attributes: true });
+    
+    return () => observer.disconnect();
+  }, []);
+
+  // Theme-aware colors for charts
+  const chartColors = {
+    dark: {
+      lineStroke: '#f59e0b',
+      gridStroke: '#374151',
+      textColor: '#e5e7eb',
+      riskStroke: '#ef4444',
+      loanStroke: '#10b981',
+    },
+    light: {
+      lineStroke: '#d97706',
+      gridStroke: '#d1d5db',
+      textColor: '#1f2937',
+      riskStroke: '#dc2626',
+      loanStroke: '#059669',
+    }
+  };
+
+  const colors = isDark ? chartColors.dark : chartColors.light;
 
   useEffect(() => {
     if (!analysisId) {
@@ -223,18 +259,18 @@ const FinancialIntelligence = () => {
               </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <ComposedChart data={chartData.burn_rate_chart}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                  <XAxis dataKey="month" tick={{ fill: 'var(--text-secondary)', fontSize: 10 }} angle={-45} textAnchor="end" height={100} />
-                  <YAxis yAxisId="left" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} />
-                  <YAxis yAxisId="right" orientation="right" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={colors.gridStroke} />
+                  <XAxis dataKey="month" tick={{ fill: colors.textColor, fontSize: 10 }} angle={-45} textAnchor="end" height={100} />
+                  <YAxis yAxisId="left" tick={{ fill: colors.textColor, fontSize: 11 }} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fill: colors.textColor, fontSize: 11 }} />
                   <Tooltip contentStyle={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }} />
                   <Legend />
                   <Bar yAxisId="left" dataKey="burn_rate" fill="var(--secondary-accent)" name="Monthly Burn Rate" />
-                  <Line yAxisId="right" type="monotone" dataKey="runway_months" stroke="var(--primary-accent)" name="Runway (months)" strokeWidth={2} />
+                  <Line yAxisId="right" type="monotone" dataKey="runway_months" stroke={colors.loanStroke} name="Runway (months)" strokeWidth={2} />
                 </ComposedChart>
               </ResponsiveContainer>
               <p className="font-mono text-[11px] tracking-widest text-[var(--text-secondary)] mt-4 uppercase">
-                Current Runway: <span className="text-[var(--primary-accent)] font-bold">{chartData.burn_rate_chart[0]?.runway_months.toFixed(1)} months</span>
+                Current Runway: <span className="text-[var(--primary-accent)] font-bold">{chartData.burn_rate_chart[chartData.burn_rate_chart.length - 1]?.runway_months.toFixed(1)} months</span>
               </p>
             </div>
           </div>
@@ -248,11 +284,11 @@ const FinancialIntelligence = () => {
               </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={chartData.rolling_trend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                  <XAxis dataKey="month" tick={{ fill: 'var(--text-secondary)', fontSize: 10 }} angle={-45} textAnchor="end" height={100} />
-                  <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={colors.gridStroke} />
+                  <XAxis dataKey="month" tick={{ fill: colors.textColor, fontSize: 10 }} angle={-45} textAnchor="end" height={100} />
+                  <YAxis tick={{ fill: colors.textColor, fontSize: 11 }} />
                   <Tooltip contentStyle={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }} />
-                  <Line type="monotone" dataKey="value" stroke="var(--primary-accent)" strokeWidth={2} dot={{ fill: 'var(--primary-accent)' }} />
+                  <Line type="monotone" dataKey="value" stroke={colors.lineStroke} strokeWidth={2} dot={{ fill: colors.lineStroke }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -264,11 +300,11 @@ const FinancialIntelligence = () => {
               </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={chartData.risk_trend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                  <XAxis dataKey="month" tick={{ fill: 'var(--text-secondary)', fontSize: 10 }} angle={-45} textAnchor="end" height={100} />
-                  <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} domain={[0, 100]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={colors.gridStroke} />
+                  <XAxis dataKey="month" tick={{ fill: colors.textColor, fontSize: 10 }} angle={-45} textAnchor="end" height={100} />
+                  <YAxis tick={{ fill: colors.textColor, fontSize: 11 }} domain={[0, 100]} />
                   <Tooltip contentStyle={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }} />
-                  <Line type="monotone" dataKey="risk_score" stroke="var(--negative-color)" strokeWidth={2} />
+                  <Line type="monotone" dataKey="risk_score" stroke={colors.riskStroke} strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
               <div className="mt-6 grid grid-cols-3 gap-4">
@@ -292,11 +328,11 @@ const FinancialIntelligence = () => {
             </h2>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData.loan_readiness}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                <XAxis dataKey="month" tick={{ fill: 'var(--text-secondary)', fontSize: 10 }} angle={-45} textAnchor="end" height={100} />
-                <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} domain={[0, 100]} />
+                <CartesianGrid strokeDasharray="3 3" stroke={colors.gridStroke} />
+                <XAxis dataKey="month" tick={{ fill: colors.textColor, fontSize: 10 }} angle={-45} textAnchor="end" height={100} />
+                <YAxis tick={{ fill: colors.textColor, fontSize: 11 }} domain={[0, 100]} />
                 <Tooltip contentStyle={{ backgroundColor: 'var(--bg-color)', border: '1px solid var(--border-color)' }} />
-                <Line type="monotone" dataKey="loan_score" stroke="var(--primary-accent)" strokeWidth={2} />
+                <Line type="monotone" dataKey="loan_score" stroke={colors.loanStroke} strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
             <p className="font-mono text-[11px] tracking-widest text-[var(--text-secondary)] mt-4 uppercase">

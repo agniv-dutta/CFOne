@@ -14,6 +14,7 @@ from app.agents.automation_agent import AutomationAgent
 from app.agents.explainability_agent import ExplainabilityAgent
 from app.utils.pdf_parser import extract_text_from_pdf
 from app.utils.excel_parser import extract_data_from_excel
+from app.utils.financial_metrics import compute_loan_readiness_score
 from datetime import datetime, timedelta
 from typing import List, Optional
 import logging
@@ -164,6 +165,50 @@ def process_analysis(analysis_id: str, document_ids: List[str], db_path: str):
         db.add(agent_result_3)
         db.commit()
 
+        # Compute deterministic loan readiness score from agents 1-3
+        # Extract metrics from agent results
+        profit_margin = 0.0
+        runway_months = 0.0
+        burn_rate = 0.0
+        risk_score = 0.0
+
+        try:
+            # Extract profit margin from FinancialAnalyzer result
+            if isinstance(result1, dict):
+                metrics = result1.get("metrics", {})
+                profit_margin = float(metrics.get("net_profit_margin", 0.0) or 0.0)
+        except (ValueError, TypeError, AttributeError):
+            logger.warning("Failed to extract profit_margin from Agent 1 result")
+
+        try:
+            # Extract runway and burn rate from CashFlowForecaster result
+            if isinstance(result2, dict):
+                runway_months = float(result2.get("runway_months", 0.0) or 0.0)
+                burn_rate = float(result2.get("monthly_burn_rate", 0.0) or 0.0)
+        except (ValueError, TypeError, AttributeError):
+            logger.warning("Failed to extract runway_months/burn_rate from Agent 2 result")
+
+        try:
+            # Extract risk score from RiskDetector result
+            if isinstance(result3, dict):
+                risk_score = float(result3.get("risk_score", 0.0) or 0.0)
+        except (ValueError, TypeError, AttributeError):
+            logger.warning("Failed to extract risk_score from Agent 3 result")
+
+        # Compute loan readiness score using deterministic formula
+        loan_readiness_score = compute_loan_readiness_score(
+            profit_margin=profit_margin,
+            runway_months=runway_months,
+            burn_rate=burn_rate,
+            risk_score=risk_score
+        )
+
+        logger.info(
+            f"Loan readiness score computed: {loan_readiness_score} "
+            f"(profit_margin={profit_margin}, runway_months={runway_months}, "
+            f"burn_rate={burn_rate}, risk_score={risk_score})"
+        )
+
         logger.info("Executing Agent 4: Automation Agent")
         context4 = {"financial_data": result1}
 
@@ -194,8 +239,9 @@ def process_analysis(analysis_id: str, document_ids: List[str], db_path: str):
             "section_2_cash_flow_forecast": result2,
             "section_3_risk_alerts": result3,
             "section_4_compliance_automation": result4,
-            "section_5_loan_readiness_score": result5.get("loan_readiness_score", 0),
+            "section_5_loan_readiness_score": loan_readiness_score,
             "section_6_recommended_actions": result5,
+            "loan_readiness_score": loan_readiness_score,
         }
 
         # Create report

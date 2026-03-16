@@ -248,20 +248,23 @@ class NovaClient:
 
     def generate_embeddings(self, text: str) -> List[float]:
         """
-        Generate vector embeddings for text
+        Generate vector embeddings for text using Titan Embed Text model
 
         Args:
             text: Text to embed
 
         Returns:
-            1536-dimensional embedding vector
+            1024-dimensional embedding vector
         """
         try:
-            # Truncate text if too long (Titan has limits)
+            # Truncate text if too long
             if len(text) > 8000:
                 text = text[:8000]
 
-            request_body = {"inputText": text}
+            # Titan Embed Text API format
+            request_body = {
+                "inputText": text
+            }
 
             response = self.client.invoke_model(
                 modelId=self.embedding_model_id,
@@ -271,9 +274,14 @@ class NovaClient:
             )
 
             response_body = json.loads(response["body"].read())
+            # Titan returns embedding in this structure
             embedding = response_body.get("embedding", [])
 
-            logger.info(f"Generated embedding with {len(embedding)} dimensions")
+            if embedding:
+                logger.info(f"Generated embedding with {len(embedding)} dimensions")
+            else:
+                logger.warning(f"No embedding returned from model")
+            
             return embedding
 
         except Exception as e:

@@ -313,34 +313,63 @@ def _generate_rolling_trend(financial_data: Dict[str, Any]) -> List[TrendPoint]:
     return points
 
 
-def _generate_burn_rate_chart(financial_data: Dict[str, Any]) -> List[BurnRatePoint]:
-    """Generate burn rate vs runway chart"""
-    monthly_burn = financial_data.get("monthly_burn_rate", 0)
-    if monthly_burn == 0:
-        monthly_burn = financial_data.get("expenses", 80000) / 12
-    
-    cash = financial_data.get("cash_balance", 0)
-    if cash == 0:
-        cash = financial_data.get("revenue", 100000) * 0.15
-    
-    runway = financial_data.get("runway_months", 0)
-    if runway == 0 and monthly_burn > 0:
-        runway = cash / monthly_burn
+def _generate_burn_rate_chart(analysis_id: str, db: Session, current_user_id: str, financial_data: Dict[str, Any]) -> List[BurnRatePoint]:
+    """Generate burn rate vs runway chart from real analysis history."""
+    # Query all completed analyses for this user, sorted by created_at
+    analyses = (
+        db.query(models.Analysis)
+        .filter(
+            models.Analysis.user_id == current_user_id,
+            models.Analysis.status == "completed",
+        )
+        .order_by(models.Analysis.created_at.asc())
+        .all()
+    )
     
     points = []
-    base_date = datetime.now()
-    remaining_cash = cash
     
-    for i in range(12):
-        month_date = base_date + timedelta(days=30 * i)
-        remaining_cash = max(0, cash - (monthly_burn * (i + 1)))
-        current_runway = (remaining_cash / monthly_burn) if monthly_burn > 0 else 0
+    if analyses:
+        # Build trend from real historical data
+        for analysis in analyses:
+            report = db.query(models.Report).filter(models.Report.analysis_id == analysis.analysis_id).first()
+            if not report or not report.report_data:
+                continue
+            
+            section2 = report.report_data.get("section_2_cash_flow_forecast", {})
+            monthly_burn = float(section2.get("monthly_burn_rate") or 0)
+            runway = float(section2.get("runway_months") or 0)
+            
+            # Use report created_at as the month label
+            month_label = analysis.created_at.strftime("%b %Y")
+            
+            # Calculate remaining cash based on burn rate and runway
+            remaining = runway * monthly_burn if monthly_burn > 0 else 0
+            
+            points.append(BurnRatePoint(
+                month=month_label,
+                burn_rate=round(monthly_burn, 2),
+                remaining_cash=round(remaining, 2),
+                runway_months=round(runway, 1)
+            ))
+    else:
+        # Fallback to current analysis data if no history
+        monthly_burn = financial_data.get("monthly_burn_rate", 0)
+        if monthly_burn == 0:
+            monthly_burn = financial_data.get("expenses", 80000) / 12
+        
+        cash = financial_data.get("cash_balance", 0)
+        if cash == 0:
+            cash = financial_data.get("revenue", 100000) * 0.15
+        
+        runway = financial_data.get("runway_months", 0)
+        if runway == 0 and monthly_burn > 0:
+            runway = cash / monthly_burn
         
         points.append(BurnRatePoint(
-            month=month_date.strftime("%b %Y"),
+            month=datetime.now().strftime("%b %Y"),
             burn_rate=round(monthly_burn, 2),
-            remaining_cash=round(remaining_cash, 2),
-            runway_months=round(max(0, current_runway), 1)
+            remaining_cash=round(cash, 2),
+            runway_months=round(max(0, runway), 1)
         ))
     
     return points
@@ -372,62 +401,111 @@ def _generate_expense_breakdown(financial_data: Dict[str, Any]) -> List[ExpenseI
     ]
 
 
-def _generate_risk_trend(report_data: Dict[str, Any]) -> List[RiskTrendPoint]:
-    """Generate risk score trend from real RiskDetector score."""
-    section3 = report_data.get("section_3_risk_alerts", {})
-    overall_risk = float(section3.get("risk_score") or 45)
+def _generate_risk_trend(analysis_id: str, db: Session, current_user_id: str, report_data: Dict[str, Any]) -> List[RiskTrendPoint]:
+    """Generate risk score trend from real analysis history."""
+    # Query all completed analyses for this user, sorted by created_at
+    analyses = (
+        db.query(models.Analysis)
+        .filter(
+            models.Analysis.user_id == current_user_id,
+            models.Analysis.status == "completed",
+        )
+        .order_by(models.Analysis.created_at.asc())
+        .all()
+    )
     
     points = []
-    base_date = datetime.now()
     
-    for i in range(12):
-        month_date = base_date - timedelta(days=30 * (11 - i))
-        # Simulate risk trend (slight increase)
-        risk_value = max(0, min(100, overall_risk + (i * 1.5)))
+    if analyses:
+        # Build trend from real historical risk data
+        for analysis in analyses:
+            report = db.query(models.Report).filter(models.Report.analysis_id == analysis.analysis_id).first()
+            if not report or not report.report_data:
+                continue
+            
+            section3 = report.report_data.get("section_3_risk_alerts", {})
+            risk_score = float(section3.get("risk_score") or 0)
+            
+            # Determine risk level
+            if risk_score < 40:
+                level = "Low"
+            elif risk_score < 70:
+                level = "Medium"
+            else:
+                level = "High"
+            
+            month_label = analysis.created_at.strftime("%b %Y")
+            
+            points.append(RiskTrendPoint(
+                month=month_label,
+                risk_score=round(risk_score, 1),
+                risk_level=level
+            ))
+    else:
+        # Fallback to current analysis risk score
+        section3 = report_data.get("section_3_risk_alerts", {})
+        overall_risk = float(section3.get("risk_score") or 45)
         
-        if risk_value < 40:
+        if overall_risk < 40:
             level = "Low"
-        elif risk_value < 70:
+        elif overall_risk < 70:
             level = "Medium"
         else:
-            level = "Critical"
+            level = "High"
         
         points.append(RiskTrendPoint(
-            month=month_date.strftime("%b %Y"),
-            risk_score=round(risk_value, 1),
+            month=datetime.now().strftime("%b %Y"),
+            risk_score=round(overall_risk, 1),
             risk_level=level
         ))
     
     return points
 
 
-def _generate_loan_readiness(financial_data: Dict[str, Any]) -> List[LoanReadinessPoint]:
-    """Generate loan readiness score trend anchored to the real ExplainabilityAgent score."""
-    loan_readiness_score = financial_data.get("loan_readiness_score", 0)
-    profit_margin = financial_data.get("profit_margin", 0)
-    runway = financial_data.get("runway_months", 0)
-
-    if loan_readiness_score > 0:
-        # Build a trailing 12-month series that ends at the real current score
-        current_score = float(loan_readiness_score)
-        start_score = max(0, current_score - 22)  # ~2 pts/month improvement over a year
-    else:
-        # Formula-based fallback
-        current_score = min(100, (profit_margin / 100) * 20 + min(runway / 12, 1) * 30 + 40 + 22)
-        start_score = max(0, current_score - 22)
-
+def _generate_loan_readiness(analysis_id: str, db: Session, current_user_id: str, financial_data: Dict[str, Any]) -> List[LoanReadinessPoint]:
+    """Generate loan readiness score trend from real analysis history."""
+    # Query all completed analyses for this user, sorted by created_at
+    analyses = (
+        db.query(models.Analysis)
+        .filter(
+            models.Analysis.user_id == current_user_id,
+            models.Analysis.status == "completed",
+        )
+        .order_by(models.Analysis.created_at.asc())
+        .all()
+    )
+    
     points = []
-    base_date = datetime.now()
-
-    for i in range(12):
-        month_date = base_date - timedelta(days=30 * (11 - i))
-        score = start_score + (i / 11.0) * (current_score - start_score) if current_score != start_score else current_score
-
+    
+    if analyses:
+        # Build trend from real historical loan readiness data
+        for analysis in analyses:
+            report = db.query(models.Report).filter(models.Report.analysis_id == analysis.analysis_id).first()
+            if not report or not report.report_data:
+                continue
+            
+            section6 = report.report_data.get("section_6_recommended_actions", {})
+            loan_score = float(
+                section6.get("loan_readiness_score")
+                or report.report_data.get("section_5_loan_readiness_score")
+                or 0
+            )
+            
+            month_label = analysis.created_at.strftime("%b %Y")
+            
+            points.append(LoanReadinessPoint(
+                month=month_label,
+                loan_score=round(max(0, min(100, loan_score)), 1)
+            ))
+    else:
+        # Fallback to current analysis loan readiness score
+        loan_score = financial_data.get("loan_readiness_score", 0)
+        
         points.append(LoanReadinessPoint(
-            month=month_date.strftime("%b %Y"),
-            loan_score=round(max(0, min(100, score)), 1),
+            month=datetime.now().strftime("%b %Y"),
+            loan_score=round(max(0, min(100, loan_score)), 1)
         ))
-
+    
     return points
 
 
@@ -475,10 +553,10 @@ async def get_dashboard_charts(
         revenue_waterfall=_generate_revenue_waterfall(financial_data),
         variance_chart=_generate_variance_analysis(financial_data),
         rolling_trend=_generate_rolling_trend(financial_data),
-        burn_rate_chart=_generate_burn_rate_chart(financial_data),
+        burn_rate_chart=_generate_burn_rate_chart(analysis_id, db, current_user.user_id, financial_data),
         expense_breakdown=_generate_expense_breakdown(financial_data),
-        risk_trend=_generate_risk_trend(report_data),
-        loan_readiness=_generate_loan_readiness(financial_data),
+        risk_trend=_generate_risk_trend(analysis_id, db, current_user.user_id, report_data),
+        loan_readiness=_generate_loan_readiness(analysis_id, db, current_user.user_id, financial_data),
     )
     
     logger.info(f"Dashboard charts generated for analysis {analysis_id}")

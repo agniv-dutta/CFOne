@@ -58,7 +58,83 @@ Output format must be valid JSON matching this structure:
             reasoning_effort="medium",
         )
 
+        # Ensure recommended_actions is always present with fallback values
+        if "recommended_actions" not in result or not result.get("recommended_actions"):
+            logger.warning("No recommended_actions in explainability output, using defaults")
+            result["recommended_actions"] = self._generate_default_recommendations(context)
+        
         return result
+
+    def _generate_default_recommendations(self, context: Dict[str, Any]) -> list:
+        """Generate default recommendations if model doesn't provide them"""
+        financial_data = context.get("financial_data", {})
+        risk_data = context.get("risk_data", {})
+        
+        recommendations = []
+        
+        # Check profit margin
+        profit_margin = financial_data.get("profit_margin", 0)
+        if profit_margin < 0:
+            recommendations.append({
+                "priority": 1,
+                "category": "revenue",
+                "action": "Increase revenue through market expansion or pricing optimization",
+                "impact": "high",
+                "effort": "high",
+                "timeline": "3-6 months",
+                "details": "Current negative profit margin indicates expenses exceed revenue. Focus on growing top-line revenue or entering new markets."
+            })
+        
+        # Check runway
+        runway = financial_data.get("runway_months", 0)
+        if runway < 3:
+            recommendations.append({
+                "priority": 1 if runway < 1 else 2,
+                "category": "cash_management",
+                "action": "Improve cash management and reduce monthly burn rate",
+                "impact": "high",
+                "effort": "medium",
+                "timeline": "immediate",
+                "details": f"With only {runway:.1f} months of runway, immediate action is needed to extend cash position or reduce expenses."
+            })
+        
+        # Check risk score
+        risk_score = risk_data.get("risk_score", 0)
+        if risk_score > 70:
+            recommendations.append({
+                "priority": 2,
+                "category": "compliance",
+                "action": "Address high-risk financial indicators and implement controls",
+                "impact": "high",
+                "effort": "medium",
+                "timeline": "1-3 months",
+                "details": "High risk score indicates volatility or structural issues. Implement financial controls and monitoring systems."
+            })
+        
+        # Add general recommendations to reach minimum
+        if len(recommendations) < 3:
+            recommendations.append({
+                "priority": 3,
+                "category": "cost_reduction",
+                "action": "Conduct operational efficiency review",
+                "impact": "medium",
+                "effort": "medium",
+                "timeline": "1-3 months",
+                "details": "Review all operating expenses and identify opportunities for cost optimization."
+            })
+        
+        if len(recommendations) < 3:
+            recommendations.append({
+                "priority": 4,
+                "category": "debt",
+                "action": "Develop debt management strategy",
+                "impact": "medium",
+                "effort": "medium",
+                "timeline": "3-6 months",
+                "details": "Create a plan to manage and optimize debt obligations."
+            })
+        
+        return recommendations[:5]  # Return max 5 recommendations
 
     def _build_prompt(self, context: Dict[str, Any]) -> str:
         """Build prompt for explainability"""

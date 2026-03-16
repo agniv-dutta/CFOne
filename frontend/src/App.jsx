@@ -12,14 +12,7 @@ import Documents from './pages/Documents';
 import Analysis from './pages/Analysis';
 import Report from './pages/Report';
 import FinancialIntelligence from './pages/FinancialIntelligence';
-
-// Placeholder empty components that will be populated later, or using the existing ones
-const ReportsPlaceholder = () => (
-  <div className="surface-card p-10 animate-fade-up">
-    <h1 className="font-display text-3xl mb-4 text-[var(--text-primary)]">Reports</h1>
-    <p className="text-[var(--text-secondary)]">View past analysis reports here.</p>
-  </div>
-);
+import Reports from './pages/Reports';
 
 export default function App() {
   return (
@@ -41,7 +34,7 @@ export default function App() {
             <Route path="/documents" element={<Documents />} />
             <Route path="/analysis" element={<Analysis />} />
             <Route path="/financial-intelligence" element={<FinancialIntelligence />} />
-            <Route path="/reports" element={<ReportsPlaceholder />} />
+            <Route path="/reports" element={<Reports />} />
             <Route path="/report/:analysisId" element={<Report />} />
           </Route>
         </Routes>

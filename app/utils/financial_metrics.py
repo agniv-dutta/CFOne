@@ -246,3 +246,46 @@ def categorize_risk_level(score: int) -> str:
         return "high"
     else:
         return "critical"
+
+
+def compute_loan_readiness_score(
+    profit_margin: float = 0.0,
+    runway_months: float = 0.0,
+    burn_rate: float = 0.0,
+    risk_score: float = 0.0
+) -> int:
+    """
+    Compute deterministic loan readiness score using financial metrics.
+    
+    This function provides a fallback calculation that doesn't depend on LLM output,
+    ensuring the loan readiness score is always computed and available.
+
+    Args:
+        profit_margin: Net profit margin as percentage (e.g., 5.0 for 5%)
+        runway_months: Cash runway in months (e.g., 12.5)
+        burn_rate: Monthly burn rate (not used in formula but available for logging)
+        risk_score: Overall risk score 0-100 (higher = more risky)
+
+    Returns:
+        Loan readiness score as integer between 0-100
+        
+    Formula:
+        score = max(0, min(100, int(50 + profit_margin*2 - risk_score*0.5 + runway_months*3)))
+    """
+    # Handle None/NaN values
+    profit_margin = max(0, float(profit_margin or 0.0))
+    runway_months = max(0, float(runway_months or 0.0))
+    risk_score = max(0, min(100, float(risk_score or 0.0)))
+    
+    # Apply deterministic formula
+    base_score = 50  # Base score
+    profit_boost = profit_margin * 2  # Profitability increases score
+    risk_penalty = risk_score * 0.5  # Risk decreases score
+    runway_bonus = runway_months * 3  # Longer runway increases score
+    
+    raw_score = base_score + profit_boost - risk_penalty + runway_bonus
+    
+    # Clamp to 0-100 range
+    loan_readiness_score = max(0, min(100, int(raw_score)))
+    
+    return loan_readiness_score
